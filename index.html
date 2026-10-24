@@ -7,6 +7,11 @@
 <meta name="theme-color" content="#111827">
 <title>Gozie AI</title>
 
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#111827">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+
+
 <style>
 
 :root {
@@ -740,5 +745,19 @@ if (chats.length > 0) {
 
 renderChat();
 </script>
+
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("./sw.js")
+      .catch(error => console.error(
+        "Gozie AI service worker error:", error
+      ));
+  });
+}
+</script>
+
 </body>
 </html>
