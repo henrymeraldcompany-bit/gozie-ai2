@@ -43,6 +43,109 @@ button {
   padding: 10px;
 }
 
+
+/* ===== GOZIE AI PREMIUM SETTINGS STYLE ===== */
+
+/* Settings section */
+.settings {
+  padding: 18px 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  gap: 16px;
+}
+
+/* Labels for Appearance and Accent colour */
+.settings label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* Rounded Appearance dropdown */
+.settings select {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background-color: var(--panel2);
+  color: var(--text);
+  outline: none;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color-scheme: dark;
+}
+
+/* Light theme dropdown */
+body.light .settings select {
+  color-scheme: light;
+}
+
+/* Highlight dropdown when selected */
+.settings select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(
+    in srgb, var(--accent) 22%, transparent
+  );
+}
+
+/* Custom Accent colour picker */
+.settings input[type="color"] {
+  display: block;
+  width: 100%;
+  height: 52px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel2);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s,
+              transform 0.2s;
+}
+
+/* Rounded colour preview */
+.settings input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.settings input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 9px;
+}
+
+.settings input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: 9px;
+}
+
+/* Accent picker focus effect */
+.settings input[type="color"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(
+    in srgb, var(--accent) 22%, transparent
+  );
+}
+
+/* Subtle interaction */
+.settings input[type="color"]:active {
+  transform: scale(0.98);
+}
+
+/* Keep the settings controls consistent */
+.settings select,
+.settings input[type="color"] {
+  box-sizing: border-box;
+}
+
 .app {
   display: flex;
   height: 100dvh;
@@ -118,14 +221,12 @@ button {
   padding-top: 12px;
   display: grid;
   gap: 8px;
-  border-radius: 12px;
 }
 
 .settings label {
   display: block;
   color: var(--muted);
   font-size: 12px;
-  border-radius: 12px;
 }
 
 .settings select,
