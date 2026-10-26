@@ -896,7 +896,8 @@ import {initializeApp}
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
@@ -1012,29 +1013,52 @@ function friendlyError(error) {
     "auth/unauthorized-domain": "This website is not authorized in Firebase. Add henrymeraldcompany-bit.github.io to Firebase Authentication's authorized domains.",
     "auth/network-request-failed": "Network error. Check your internet connection and try again.",
     "auth/operation-not-allowed": "This sign-in method is disabled. Enable it in Firebase Authentication settings.",
-    "auth/too-many-requests": "Too many attempts. Please wait and try again."
+    "auth/too-many-requests": "Too many attempts. Please wait and try again.",
+"auth/redirect-cancelled-by-user":
+  "Google sign-in was cancelled. Please try again.",
+"auth/redirect-operation-pending":
+  "A Google sign-in is already in progress. Please wait.",
+"auth/operation-not-supported-in-this-environment":
+  "This browser cannot complete the sign-in process. Try the latest version of Chrome."
   };
 
   return errors[error.code] ||
     "Sign-in failed: " + (error.message || "Please try again.");
 }
 
-googleButton.addEventListener("click",async () => {
+googleButton.addEventListener("click", async () => {
   if (busy) return;
+
   clearMessage();
   setBusy(true);
+  googleButton.textContent = "Redirecting to Google…";
 
   try {
-    await signInWithPopup(auth,googleProvider);
-    showMessage("You have signed in successfully with Google.","success");
-    setTimeout(() => overlay.classList.remove("open"),900);
-  } catch(error) {
-    console.error("Gozie AI Google sign-in error:",error);
+    await signInWithRedirect(auth, googleProvider);
+  } catch (error) {
+    console.error("Gozie AI Google redirect error:", error);
     showMessage(friendlyError(error));
-  } finally {
     setBusy(false);
+    googleButton.innerHTML =
+      '<span class="google-g">G</span> Continue with Google';
   }
 });
+
+getRedirectResult(auth)
+  .then(result => {
+    if (result && result.user) {
+      overlay.classList.remove("open");
+      console.log(
+        "Gozie AI Google sign-in successful:",
+        result.user.email
+      );
+    }
+  })
+  .catch(error => {
+    console.error("Gozie AI Google redirect result error:", error);
+    openAuth();
+    showMessage(friendlyError(error));
+  });
 
 authForm.addEventListener("submit",async event => {
   event.preventDefault();
