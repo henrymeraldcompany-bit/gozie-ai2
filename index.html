@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,758 +5,131 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#111827">
 <title>Gozie AI</title>
-
 <link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#111827">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
-
-
 <style>
-
-:root {
-  --accent: #7c5cff;
-  --bg: #0d1117;
-  --panel: #151b25;
-  --panel2: #1d2532;
-  --text: #f3f4f6;
-  --muted: #9ca3af;
-  --border: #2c3544;
-}
-
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  height: 100dvh;
-  overflow: hidden;
-  background: var(--bg);
-  color: var(--text);
-  font: 15px system-ui, sans-serif;
-}
-
-button, input, textarea, select {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-  color: var(--text);
-  background: var(--panel2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px;
-}
-
-
-/* ===== GOZIE AI PREMIUM SETTINGS STYLE ===== */
-
-/* Settings section */
-.settings {
-  padding: 18px 14px 14px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--panel);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  gap: 16px;
-}
-
-/* Labels for Appearance and Accent colour */
-.settings label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-
-/* Rounded Appearance dropdown */
-.settings select {
-  display: block;
-  width: 100%;
-  min-height: 48px;
-  padding: 0 14px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background-color: var(--panel2);
-  color: var(--text);
-  outline: none;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  color-scheme: dark;
-}
-
-/* Light theme dropdown */
-body.light .settings select {
-  color-scheme: light;
-}
-
-/* Highlight dropdown when selected */
-.settings select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(
-    in srgb, var(--accent) 22%, transparent
-  );
-}
-
-/* Custom Accent colour picker */
-.settings input[type="color"] {
-  display: block;
-  width: 100%;
-  height: 52px;
-  padding: 5px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--panel2);
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s,
-              transform 0.2s;
-}
-
-/* Rounded colour preview */
-.settings input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 2px;
-}
-
-.settings input[type="color"]::-webkit-color-swatch {
-  border: none;
-  border-radius: 9px;
-}
-
-.settings input[type="color"]::-moz-color-swatch {
-  border: none;
-  border-radius: 9px;
-}
-
-/* Accent picker focus effect */
-.settings input[type="color"]:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(
-    in srgb, var(--accent) 22%, transparent
-  );
-}
-
-/* Subtle interaction */
-.settings input[type="color"]:active {
-  transform: scale(0.98);
-}
-
-/* Keep the settings controls consistent */
-.settings select,
-.settings input[type="color"] {
-  box-sizing: border-box;
-}
-
-.app {
-  display: flex;
-  height: 100dvh;
-}
-
-.sidebar {
-  width: 270px;
-  flex-shrink: 0;
-  background: var(--panel);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  padding: 14px;
-  gap: 12px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.logo {
-  background: var(--accent);
-  color: white;
-  border-radius: 10px;
-  padding: 7px 12px;
-}
-
-.close-sidebar {
-  display: none;
-  margin-left: auto;
-  border: none;
-  background: transparent;
-  font-size: 26px;
-  padding: 3px 10px;
-}
-
-.new-chat {
-  width: 100%;
-  text-align: left;
-  border-color: var(--accent);
-}
-
-.section-label {
-  color: var(--muted);
-  font-size: 12px;
-  text-transform: uppercase;
-}
-
-.history {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.history button {
-  width: 100%;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-bottom: 4px;
-}
-
-.history button.active {
-  border-color: var(--accent);
-}
-
-.settings {
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
-  display: grid;
-  gap: 8px;
-}
-
-.settings label {
-  display: block;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.settings select,
-.settings input {
-  width: 100%;
-  margin-top: 4px;
-}
-
-.main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.topbar {
-  height: 60px;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 15px;
-}
-
-.top-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.menu-button {
-  display: none;
-}
-
-.messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 14px;
-}
-
-.thread {
-  max-width: 760px;
-  margin: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.welcome {
-  text-align: center;
-  margin: auto;
-  padding: 35px 10px;
-}
-
-.welcome h1 {
-  font-size: clamp(27px, 5vw, 38px);
-}
-
-.welcome p,
-.footnote {
-  color: var(--muted);
-}
-
-.suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-}
-
-.message {
-  padding: 12px 15px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  border-radius: 14px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.message.user {
-  background: #292447;
-  align-self: flex-end;
-  max-width: 90%;
-}
-
-.message.assistant {
-  align-self: flex-start;
-  max-width: 95%;
-}
-
-.composer-area {
-  padding: 12px;
-}
-
-.composer {
-  max-width: 760px;
-  margin: auto;
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 15px;
-  padding: 10px;
-}
-
-.composer textarea {
-  flex: 1;
-  min-width: 0;
-  max-height: 150px;
-  resize: none;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--text);
-  padding: 8px;
-}
-
-.send {
-  background: var(--accent);
-  color: white;
-}
-
-.footnote {
-  text-align: center;
-  font-size: 11px;
-  margin-top: 8px;
-}
-
-/* Mobile sidebar and its close button */
-@media (max-width: 700px) {
-  .sidebar {
-    position: fixed;
-    z-index: 10;
-    inset: 0 auto 0 0;
-    width: min(85vw, 300px);
-    height: 100dvh;
-    overflow-y: auto;
-    transform: translateX(-105%);
-    transition: transform 0.2s ease;
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-    box-shadow: 0 0 0 100vmax #0008;
-  }
-
-  .close-sidebar {
-    display: block;
-  }
-
-  .menu-button {
-    display: inline-block;
-  }
-
-  .topbar {
-    padding: 0 10px;
-  }
-
-  .welcome {
-    padding: 20px 3px;
-  }
-}
-
-/* Light theme */
-body.light {
-  --bg: #f6f7fb;
-  --panel: #ffffff;
-  --panel2: #edf0f6;
-  --text: #171923;
-  --muted: #626b7b;
-  --border: #dce1eb;
-}
+:root{--accent:#7c5cff;--bg:#0d1117;--panel:#151b25;--panel2:#1d2532;--text:#f3f4f6;--muted:#9ca3af;--border:#2c3544}
+*{box-sizing:border-box}body{margin:0;height:100dvh;overflow:hidden;background:var(--bg);color:var(--text);font:15px system-ui,sans-serif}
+button,input,textarea,select{font:inherit}button{cursor:pointer;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px}
+.app{display:flex;height:100dvh}.sidebar{width:270px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:14px;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:bold}.logo{background:var(--accent);color:white;border-radius:10px;padding:7px 12px}
+.close-sidebar{display:none;margin-left:auto;border:0;background:transparent;font-size:26px;padding:3px 10px}.new-chat{width:100%;text-align:left;border-color:var(--accent)}
+.section-label{color:var(--muted);font-size:12px;text-transform:uppercase}.history{flex:1;overflow-y:auto}.history button{width:100%;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px}.history button.active{border-color:var(--accent)}
+.settings{padding:18px 14px 14px;border:1px solid var(--border);border-radius:20px;background:var(--panel);display:grid;gap:8px}.settings label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}.settings select,.settings input{width:100%;margin-top:4px}.settings select{min-height:48px;padding:0 14px;border:1px solid var(--border);border-radius:14px;background:var(--panel2);color:var(--text);color-scheme:dark}.settings input[type=color]{height:52px;padding:5px;border:1px solid var(--border);border-radius:14px;background:var(--panel2)}
+body.light{--bg:#f6f7fb;--panel:#fff;--panel2:#edf0f6;--text:#171923;--muted:#626b7b;--border:#dce1eb}body.light .settings select{color-scheme:light}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}.topbar{height:60px;flex-shrink:0;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 15px}.top-actions{display:flex;gap:8px}.menu-button{display:none}
+.messages{flex:1;overflow-y:auto;padding:20px 14px}.thread{max-width:760px;margin:auto;display:flex;flex-direction:column;gap:18px}.welcome{text-align:center;margin:auto;padding:35px 10px}.welcome h1{font-size:clamp(27px,5vw,38px)}.welcome p,.footnote{color:var(--muted)}.suggestions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.message{padding:12px 15px;border:1px solid var(--border);background:var(--panel);border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere}.message.user{background:#292447;align-self:flex-end;max-width:90%}.message.assistant{align-self:flex-start;max-width:95%}
+.composer-area{padding:12px}.composer{max-width:760px;margin:auto;display:flex;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:10px}.composer textarea{flex:1;min-width:0;max-height:150px;resize:none;border:0;outline:0;background:transparent;color:var(--text);padding:8px}.send{background:var(--accent);color:white}.footnote{text-align:center;font-size:11px;margin-top:8px}
+@media(max-width:700px){.sidebar{position:fixed;z-index:10;inset:0 auto 0 0;width:min(85vw,300px);height:100dvh;overflow-y:auto;transform:translateX(-105%);transition:transform .2s ease}.sidebar.open{transform:translateX(0);box-shadow:0 0 0 100vmax #0008}.close-sidebar{display:block}.menu-button{display:inline-block}.topbar{padding:0 10px}.welcome{padding:20px 3px}}
 </style>
 </head>
-
 <body>
 <div class="app">
-
-  <aside class="sidebar" id="sidebar">
-
-    <div class="brand">
-      <div class="logo">G</div>
-      <span>Gozie AI</span>
-
-      <!-- Tap this X to close the sidebar -->
-      <button
-        class="close-sidebar"
-        id="closeSidebar"
-        aria-label="Close sidebar"
-        title="Close sidebar">×</button>
-    </div>
-
-    <button class="new-chat" id="newChat">＋ New chat</button>
-
-    <div class="section-label">Your conversations</div>
-    <div class="history" id="history"></div>
-
-    <div class="settings">
-      <div>
-        <label for="theme">Appearance</label>
-        <select id="theme">
-          <option value="dark">Dark</option>
-          <option value="light">Light</option>
-        </select>
-      </div>
-
-      <div>
-        <label for="accent">Accent colour</label>
-        <input id="accent" type="color" value="#7c5cff">
-      </div>
-
-      <button id="signIn">Sign in</button>
-      <button id="clearHistory">Clear chat history</button>
-    </div>
-
-  </aside>
-
-  <main class="main">
-
-    <header class="topbar">
-      <div style="display:flex;align-items:center;gap:10px">
-        <button class="menu-button" id="menuButton">☰</button>
-        <strong id="chatTitle">New chat</strong>
-      </div>
-
-      <div class="top-actions">
-        <button id="themeButton">◐</button>
-        <button id="aboutButton">About</button>
-      </div>
-    </header>
-
-    <section class="messages" id="messages">
-      <div class="thread" id="thread">
-        <div class="welcome">
-          <h1>What can I help you with?</h1>
-          <p>Welcome to Gozie AI, your personal AI assistant.</p>
-          <div class="suggestions">
-            <button>Explain something simply</button>
-            <button>Help me write</button>
-            <button>Brainstorm ideas</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <div class="composer-area">
-      <form class="composer" id="composer">
-        <textarea
-          id="prompt"
-          rows="1"
-          placeholder="Message Gozie AI…"
-          aria-label="Message Gozie AI"></textarea>
-        <button class="send" type="submit">↑ Send</button>
-      </form>
-
-      <div class="footnote" id="status">
-        Preview mode · AI connection not yet configured
-      </div>
-    </div>
-
-  </main>
-</div>
+<aside class="sidebar" id="sidebar">
+  <div class="brand"><div class="logo">G</div><span>Gozie AI</span><button class="close-sidebar" id="closeSidebar" aria-label="Close sidebar" title="Close sidebar">×</button></div>
+  <button class="new-chat" id="newChat">＋ New chat</button>
+  <div class="section-label">Your conversations</div><div class="history" id="history"></div>
+  <div class="settings">
+    <div><label for="theme">Appearance</label><select id="theme"><option value="dark">Dark</option><option value="light">Light</option></select></div>
+    <div><label for="accent">Accent colour</label><input id="accent" type="color" value="#7c5cff"></div>
+    <button id="signIn">Sign in</button><button id="clearHistory">Clear chat history</button>
+  </div>
+</aside>
+<main class="main">
+<header class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="menu-button" id="menuButton">☰</button><strong id="chatTitle">New chat</strong></div><div class="top-actions"><button id="themeButton">◐</button><button id="aboutButton">About</button></div></header>
+<section class="messages" id="messages"><div class="thread" id="thread"><div class="welcome"><h1>What can I help you with?</h1><p>Welcome to Gozie AI, your personal AI assistant.</p><div class="suggestions"><button>Explain something simply</button><button>Help me write</button><button>Brainstorm ideas</button></div></div></div></section>
+<div class="composer-area"><form class="composer" id="composer"><textarea id="prompt" rows="1" placeholder="Message Gozie AI…" aria-label="Message Gozie AI"></textarea><button class="send" type="submit">↑ Send</button></form><div class="footnote" id="status">Preview mode · AI connection not yet configured</div></div>
+</main></div>
 
 <script>
-const $ = id => document.getElementById(id);
-
-let chats = [];
-try {
-  chats = JSON.parse(
-    localStorage.getItem("gozie_chats_v1") || "[]"
-  );
-  if (!Array.isArray(chats)) chats = [];
-} catch {
-  chats = [];
-}
-
-let currentId = null;
-
-function save() {
-  try {
-    localStorage.setItem("gozie_chats_v1", JSON.stringify(chats));
-  } catch {}
-  renderHistory();
-}
-
-function currentChat() {
-  return chats.find(chat => chat.id === currentId);
-}
-
-function closeSidebar() {
-  $("sidebar").classList.remove("open");
-}
-
-function newChat() {
-  const chat = {
-    id: Date.now().toString() +
-        Math.random().toString(16).slice(2),
-    title: "New chat",
-    messages: [],
-    updated: Date.now()
-  };
-
-  chats.unshift(chat);
-  currentId = chat.id;
-  save();
-  renderChat();
-  closeSidebar();
-  $("prompt").focus();
-}
-
-function renderHistory() {
-  const root = $("history");
-  root.innerHTML = "";
-
-  [...chats]
-    .sort((a, b) => b.updated - a.updated)
-    .forEach(chat => {
-      const button = document.createElement("button");
-
-      button.textContent = chat.title || "New chat";
-      button.className =
-        chat.id === currentId ? "active" : "";
-
-      button.onclick = () => {
-        currentId = chat.id;
-        renderChat();
-        closeSidebar();
-      };
-
-      root.appendChild(button);
-    });
-}
-
-function addMessage(role, content) {
-  const chat = currentChat();
-  if (!chat) return;
-
-  chat.messages.push({ role, content });
-  chat.updated = Date.now();
-
-  if (chat.title === "New chat" && role === "user") {
-    chat.title = content.slice(0, 35) +
-      (content.length > 35 ? "…" : "");
-  }
-
-  save();
-  renderChat();
-}
-
-function renderChat() {
-  const chat = currentChat();
-  const thread = $("thread");
-
-  $("chatTitle").textContent =
-    chat ? chat.title : "New chat";
-
-  thread.innerHTML = "";
-
-  if (!chat || chat.messages.length === 0) {
-    const welcome = document.createElement("div");
-    welcome.className = "welcome";
-
-    const heading = document.createElement("h1");
-    heading.textContent = "What can I help you with?";
-
-    const description = document.createElement("p");
-    description.textContent =
-      "Welcome to Gozie AI, your personal AI assistant.";
-
-    const suggestions = document.createElement("div");
-    suggestions.className = "suggestions";
-
-    [
-      "Explain something simply",
-      "Help me write",
-      "Brainstorm ideas"
-    ].forEach(text => {
-      const button = document.createElement("button");
-      button.textContent = text;
-      button.onclick = () => {
-        $("prompt").value = text;
-        $("prompt").focus();
-      };
-      suggestions.appendChild(button);
-    });
-
-    welcome.append(heading, description, suggestions);
-    thread.appendChild(welcome);
-  } else {
-    chat.messages.forEach(message => {
-      const bubble = document.createElement("div");
-      bubble.className =
-        "message " +
-        (message.role === "user" ? "user" : "assistant");
-      bubble.textContent = message.content;
-      thread.appendChild(bubble);
-    });
-  }
-
-  $("messages").scrollTop = $("messages").scrollHeight;
-  renderHistory();
-}
-
-/* Sidebar controls */
-$("menuButton").onclick = () => {
-  $("sidebar").classList.toggle("open");
-};
-
-$("closeSidebar").onclick = closeSidebar;
-$("newChat").onclick = newChat;
-
-/* Chat form: placeholder responses until AI is connected */
-$("composer").addEventListener("submit", event => {
-  event.preventDefault();
-
-  const text = $("prompt").value.trim();
-  if (!text) return;
-
-  if (!currentId) newChat();
-
-  $("prompt").value = "";
-  addMessage("user", text);
-
-  addMessage(
-    "assistant",
-    "Gozie AI is not connected to the real AI model yet. " +
-    "This is a preview. The next step is connecting " +
-    "your SmolLM3 service securely."
-  );
-
-  $("status").textContent =
-    "Preview mode · real AI connection is not configured";
-});
-
-$("prompt").addEventListener("keydown", event => {
-  if (event.key === "Enter" && !event.shiftKey) {
-    event.preventDefault();
-    $("composer").requestSubmit();
-  }
-});
-
-$("prompt").addEventListener("input", () => {
-  const input = $("prompt");
-  input.style.height = "auto";
-  input.style.height = Math.min(input.scrollHeight, 150) + "px";
-});
-
-/* Theme settings */
-function setTheme(theme) {
-  document.body.classList.toggle("light", theme === "light");
-  $("theme").value = theme;
-  localStorage.setItem("gozie_theme_v1", theme);
-}
-
-$("theme").onchange = () => setTheme($("theme").value);
-
-$("themeButton").onclick = () => {
-  setTheme(
-    document.body.classList.contains("light") ? "dark" : "light"
-  );
-};
-
-$("accent").oninput = () => {
-  document.documentElement.style.setProperty(
-    "--accent",
-    $("accent").value
-  );
-  localStorage.setItem("gozie_accent_v1", $("accent").value);
-};
-
-/* Other controls */
-$("clearHistory").onclick = () => {
-  if (confirm("Delete all conversations saved on this device?")) {
-    chats = [];
-    currentId = null;
-    save();
-    renderChat();
-  }
-};
-
-$("signIn").onclick = () => {
-  alert(
-    "Google and email sign-in have not been configured yet. " +
-    "We will add Firebase Authentication in the next stage."
-  );
-};
-
-$("aboutButton").onclick = () => {
-  alert(
-    "Gozie AI interface prototype. " +
-    "Real AI responses and sign-in are not connected yet."
-  );
-};
-
-/* Restore saved preferences and conversations */
-setTheme(localStorage.getItem("gozie_theme_v1") || "dark");
-
-const savedAccent =
-  localStorage.getItem("gozie_accent_v1") || "#7c5cff";
-
-$("accent").value = savedAccent;
-document.documentElement.style.setProperty(
-  "--accent",
-  savedAccent
-);
-
-if (chats.length > 0) {
-  currentId = chats[0].id;
-}
-
-renderChat();
+const $=id=>document.getElementById(id);
+let chats=[];
+try{chats=JSON.parse(localStorage.getItem("gozie_chats_v1")||"[]");if(!Array.isArray(chats))chats=[]}catch{chats=[]}
+let currentId=null;
+function save(){try{localStorage.setItem("gozie_chats_v1",JSON.stringify(chats))}catch{}renderHistory()}
+function currentChat(){return chats.find(chat=>chat.id===currentId)}
+function closeSidebar(){$("sidebar").classList.remove("open")}
+function newChat(){const chat={id:Date.now().toString()+Math.random().toString(16).slice(2),title:"New chat",messages:[],updated:Date.now()};chats.unshift(chat);currentId=chat.id;save();renderChat();closeSidebar();$("prompt").focus()}
+function renderHistory(){const root=$("history");root.innerHTML="";[...chats].sort((a,b)=>b.updated-a.updated).forEach(chat=>{const button=document.createElement("button");button.textContent=chat.title||"New chat";button.className=chat.id===currentId?"active":"";button.onclick=()=>{currentId=chat.id;renderChat();closeSidebar()};root.appendChild(button)})}
+function addMessage(role,content){const chat=currentChat();if(!chat)return;chat.messages.push({role,content});chat.updated=Date.now();if(chat.title==="New chat"&&role==="user")chat.title=content.slice(0,35)+(content.length>35?"…":"");save();renderChat()}
+function renderChat(){const chat=currentChat(),thread=$("thread");$("chatTitle").textContent=chat?chat.title:"New chat";thread.innerHTML="";if(!chat||chat.messages.length===0){const welcome=document.createElement("div");welcome.className="welcome";const heading=document.createElement("h1");heading.textContent="What can I help you with?";const description=document.createElement("p");description.textContent="Welcome to Gozie AI, your personal AI assistant.";const suggestions=document.createElement("div");suggestions.className="suggestions";["Explain something simply","Help me write","Brainstorm ideas"].forEach(text=>{const button=document.createElement("button");button.textContent=text;button.onclick=()=>{$("prompt").value=text;$("prompt").focus()};suggestions.appendChild(button)});welcome.append(heading,description,suggestions);thread.appendChild(welcome)}else{chat.messages.forEach(message=>{const bubble=document.createElement("div");bubble.className="message "+(message.role==="user"?"user":"assistant");bubble.textContent=message.content;thread.appendChild(bubble)})}$("messages").scrollTop=$("messages").scrollHeight;renderHistory()}
+$("menuButton").onclick=()=>$("sidebar").classList.toggle("open");$("closeSidebar").onclick=closeSidebar;$("newChat").onclick=newChat;
+$("composer").addEventListener("submit",event=>{event.preventDefault();const text=$("prompt").value.trim();if(!text)return;if(!currentId)newChat();$("prompt").value="";addMessage("user",text);addMessage("assistant","Gozie AI is not connected to the real AI model yet. This is a preview. The next step is connecting your SmolLM3 service securely.");$("status").textContent="Preview mode · real AI connection is not configured"});
+$("prompt").addEventListener("keydown",event=>{if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();$("composer").requestSubmit()}});
+$("prompt").addEventListener("input",()=>{const input=$("prompt");input.style.height="auto";input.style.height=Math.min(input.scrollHeight,150)+"px"});
+function setTheme(theme){document.body.classList.toggle("light",theme==="light");$("theme").value=theme;localStorage.setItem("gozie_theme_v1",theme)}
+$("theme").onchange=() =>setTheme($("theme").value);$("themeButton").onclick=()=>setTheme(document.body.classList.contains("light")?"dark":"light");
+$("accent").oninput=()=>{document.documentElement.style.setProperty("--accent",$("accent").value);localStorage.setItem("gozie_accent_v1",$("accent").value)};
+$("clearHistory").onclick=()=>{if(confirm("Delete all conversations saved on this device?")){chats=[];currentId=null;save();renderChat()}};
+$("signIn").onclick=()=>alert("Firebase is loading. Please try again in a moment.");
+$("aboutButton").onclick=()=>alert("Gozie AI interface. Google and email sign-in are connected through Firebase when configured.");
+setTheme(localStorage.getItem("gozie_theme_v1")||"dark");
+const savedAccent=localStorage.getItem("gozie_accent_v1")||"#7c5cff";$("accent").value=savedAccent;document.documentElement.style.setProperty("--accent",savedAccent);
+if(chats.length>0)currentId=chats[0].id;renderChat();
 </script>
 
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+const firebaseConfig={
+  apiKey:"AIzaSyBlJI8EOB4RiT0h8WuIcEFW0g0vpNWHKzY",
+  authDomain:"gozie-ai2.firebaseapp.com",
+  projectId:"gozie-ai2",
+  storageBucket:"gozie-ai2.firebasestorage.app",
+  messagingSenderId:"721332592612",
+  appId:"1:721332592612:web:42ef393991bda492ffb1f1"
+};
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const googleProvider=new GoogleAuthProvider();
+const signInButton=document.getElementById("signIn");
+
+if(signInButton){
+  signInButton.onclick=async()=>{
+    const choice=prompt("Welcome to Gozie AI!\n\nType 1 to sign in with Google\nType 2 to sign in with email and password\nType 3 to create a new email account\nType 4 to sign out");
+    if(choice===null)return;
+    try{
+      if(choice==="1"){
+        await signInWithPopup(auth,googleProvider);
+        alert("Successfully signed in to Gozie AI!");
+      }else if(choice==="2"){
+        const email=prompt("Enter your email address:");if(!email)return;
+        const password=prompt("Enter your password:");if(!password)return;
+        await signInWithEmailAndPassword(auth,email.trim(),password);
+        alert("Successfully signed in to Gozie AI!");
+      }else if(choice==="3"){
+        const email=prompt("Enter your email address:");if(!email)return;
+        const password=prompt("Create a password (at least 6 characters):");if(!password)return;
+        await createUserWithEmailAndPassword(auth,email.trim(),password);
+        alert("Your Gozie AI account has been created!");
+      }else if(choice==="4"){
+        if(!auth.currentUser){alert("You are not signed in.");return}
+        await signOut(auth);alert("You have signed out.");
+      }else alert("Please choose 1, 2, 3, or 4.");
+    }catch(error){
+      console.error("Gozie AI authentication error:",error);
+      alert("Sign-in failed: "+error.message);
+    }
+  };
+}
+onAuthStateChanged(auth,user=>{
+  if(signInButton){
+    signInButton.textContent=user?"Signed in: "+(user.displayName||user.email||"User"):"Sign in";
+    signInButton.title=user?"Open account options or sign out":"Sign in to Gozie AI";
+  }
+  if(user)console.log("Gozie AI user signed in:",user.uid);
+  else console.log("No user is signed in.");
+});
+</script>
 
 <script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("./sw.js")
-      .catch(error => console.error(
-        "Gozie AI service worker error:", error
-      ));
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("./sw.js").catch(error=>console.error("Gozie AI service worker error:",error));
   });
 }
 </script>
-
 </body>
 </html>
