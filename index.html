@@ -1047,15 +1047,19 @@ googleButton.addEventListener("click", async () => {
 getRedirectResult(auth)
   .then(result => {
     if (result && result.user) {
+      console.log("GOZIE REDIRECT RESULT: SUCCESS");
+      console.log("GOZIE USER:", result.user.email);
+
       overlay.classList.remove("open");
-      console.log(
-        "Gozie AI Google sign-in successful:",
-        result.user.email
-      );
+      showMessage("Google sign-in successful.", "success");
+    } else {
+      console.log("GOZIE REDIRECT RESULT: NO RESULT");
     }
   })
   .catch(error => {
-    console.error("Gozie AI Google redirect result error:", error);
+    console.error("GOZIE REDIRECT ERROR CODE:", error.code);
+    console.error("GOZIE REDIRECT ERROR MESSAGE:", error.message);
+
     openAuth();
     showMessage(friendlyError(error));
   });
