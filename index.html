@@ -62,6 +62,19 @@ button:disabled { opacity:.55; cursor:not-allowed; }
 .history-item { min-height:43px; display:flex; align-items:center; gap:10px; width:100%; padding:8px 10px; border:0; border-radius:10px; background:transparent; color:var(--muted); text-align:left; cursor:pointer; }
 .history-item:hover { background:var(--panel-2); color:var(--text); }
 .history-item.active { background:#34373b; color:var(--text); }
+.history-entry { display:flex; align-items:center; gap:7px; width:100%; min-width:0; }
+.history-entry .history-item { flex:1; min-width:0; }
+.history-check { width:18px; height:18px; flex:none; accent-color:var(--accent); cursor:pointer; }
+.history-item .pin-mark { width:13px; height:13px; margin-left:auto; color:var(--accent); }
+.history-manage { display:none; align-items:center; gap:6px; padding:7px 6px; border:1px solid var(--border); border-radius:10px; background:var(--panel); }
+.history-manage.show { display:flex; }
+.history-manage button { min-height:30px; padding:5px 8px; border:1px solid var(--border); border-radius:8px; background:var(--panel-2); color:var(--muted); font-size:11px; cursor:pointer; }
+.history-manage button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+.history-manage button:disabled { opacity:.45; }
+.chat-context-menu { position:fixed; z-index:120; min-width:150px; padding:5px; border:1px solid var(--border); border-radius:12px; background:var(--panel); box-shadow:var(--shadow); }
+.chat-context-menu button { display:block; width:100%; padding:9px 10px; border:0; border-radius:8px; background:transparent; color:var(--text); text-align:left; font-size:12px; cursor:pointer; }
+.chat-context-menu button:hover { background:var(--panel-2); }
+.chat-context-menu button.danger { color:var(--danger); }
 .history-item svg { width:17px; height:17px; flex:none; color:var(--subtle); }
 .history-title { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:13px; }
 .history-empty { padding:13px 9px; color:var(--subtle); font-size:12px; line-height:1.5; }
@@ -274,12 +287,12 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     <button class="new-chat-btn" id="newChat"><span class="plus">＋</span><span>New chat</span><span class="shortcut">⌘ K</span></button>
     <div class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="searchChats" type="search" placeholder="Search chats" aria-label="Search chats"></div>
     <div class="history-heading"><span>YOUR CHATS</span><span id="historyCount">0</span></div>
+    <div class="history-manage" id="historyManage"><button type="button" id="selectAllChats">Select all</button><button type="button" class="primary" id="deleteSelectedChats" disabled>Delete selected</button><button type="button" id="cancelChatSelection">Cancel</button></div>
     <div class="history-list" id="history"></div>
     <div class="sidebar-bottom">
       <div class="storage-note"><span class="online-dot"></span><span>Stored on this device</span></div>
       <button class="sidebar-action" id="openSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.5 2.6-1.7-.7a8 8 0 0 1-1.7 1l-.3 1.8h-3l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.7-1.5-2.6 1.4-1.1a8 8 0 0 1 0-2l-1.4-1.1 1.5-2.6 1.7.7a8 8 0 0 1 1.7-1l.3-1.8h3l.3 1.8a8 8 0 0 1 1.7 1l1.7-.7 1.5 2.6-1.4 1.1a8 8 0 0 1 0 2Z"/></svg><span>Settings</span><span class="tail">›</span></button>
       <button class="sidebar-action" id="signIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg><span>Sign in</span></button>
-      <button class="sidebar-action" id="clearHistory"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg><span>Clear chat history</span></button>
       <button class="sidebar-action" id="aboutButton"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></svg><span>About Gozie AI</span><span class="tail">···</span></button>
     </div>
   </aside>
@@ -311,7 +324,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
               <button class="send-btn" id="sendButton" type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button>
             </div>
           </form>
-          <div class="privacy-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></svg><span>Your conversations are saved in this browser. Messages are sent to Gozie AI to generate replies.</span></div>
+          <div class="privacy-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></svg><span>When you sign in, your conversations and preferences sync to your account. Messages are sent to Gozie AI to generate replies.</span></div>
         </div>
       </section>
     </main>
@@ -319,7 +332,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     <main class="page-view" id="settingsView" hidden>
       <section class="settings-scroll">
         <div class="settings-content">
-          <div class="settings-header"><p class="eyebrow">MAKE IT YOURS</p><h1>Settings</h1><p>Your preferences are saved on this browser. Your chats stay on this device.</p></div>
+          <div class="settings-header"><p class="eyebrow">MAKE IT YOURS</p><h1>Settings</h1><p>When you sign in, your chats and preferences sync securely to your account across devices.</p></div>
 
           <section class="settings-card" aria-labelledby="appearanceHeading">
             <div class="card-heading"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg></div><div><h2 id="appearanceHeading">Appearance</h2><p>Choose a theme and your favorite accent.</p></div></div>
@@ -337,6 +350,10 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
           <section class="settings-card" aria-labelledby="accountHeading">
             <div class="card-heading"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></div><div><h2 id="accountHeading">Account</h2><p>Email and password sign-in through Firebase Authentication.</p></div></div>
             <div class="account-row"><div class="account-avatar" id="accountAvatar">G</div><div class="account-info"><strong id="accountEmail">Not signed in</strong><span id="accountCaption">Sign in or create an account to continue.</span></div><button class="secondary-btn" type="button" id="accountAction">Sign in</button></div>
+          </section>
+          <section class="settings-card" aria-labelledby="historySettingsHeading">
+            <div class="card-heading"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></div><div><h2 id="historySettingsHeading">Chat history</h2><p>Choose specific conversations to delete. You can select individual chats or select all.</p></div></div>
+            <div class="button-row"><button class="secondary-btn" type="button" id="manageChatHistory">Clear chat history</button></div>
           </section>
         </div>
       </section>
@@ -389,8 +406,26 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   let auth = null;
   let authReady = false;
   let currentUser = null;
+  let firestoreDb = null;
+  let firestoreSdk = null;
+  let cloudLoading = false;
+  let cloudLoadVersion = 0;
+  let chatSyncTimer = null;
+  let preferenceSyncTimer = null;
+  let activeCloudUid = null;
+  const guestSnapshot = {
+    chats: JSON.parse(JSON.stringify(chats)),
+    theme: localStorage.getItem(STORAGE.theme) || 'dark',
+    accent: localStorage.getItem(STORAGE.accent) || '#ed8244',
+    searchEnabled: localStorage.getItem(STORAGE.searchEnabled) === 'true'
+  };
   let createAccountMode = false;
   let searchEnabled = localStorage.getItem(STORAGE.searchEnabled) === 'true';
+  let selectionMode = false;
+  const selectedChatIds = new Set();
+  let longPressTimer = null;
+  let suppressNextHistoryClick = false;
+  let contextMenuNode = null;
 
   function safeRead(key, fallback) {
     try { const value = localStorage.getItem(key); return value === null ? fallback : JSON.parse(value); }
@@ -400,10 +435,164 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     const node = $('toast'); node.textContent = text; node.classList.add('show');
     clearTimeout(toastTimer); toastTimer = setTimeout(() => node.classList.remove('show'), 2800);
   }
+  function userCacheKey(uid, suffix) { return `gozie_user_${uid}_${suffix}`; }
+
   function saveChats() {
-    try { localStorage.setItem(STORAGE.chats, JSON.stringify(chats)); }
-    catch { notify('Unable to save chat history. Browser storage may be full.'); }
+    try {
+      const key = currentUser ? userCacheKey(currentUser.uid, 'chats') : STORAGE.chats;
+      localStorage.setItem(key, JSON.stringify(chats));
+    } catch {
+      notify('Unable to save chat history. Browser storage may be full.');
+    }
     renderHistory();
+    scheduleCloudSync();
+  }
+
+  function scheduleCloudSync() {
+    const uid = currentUser?.uid;
+    if (!uid || !firestoreDb || cloudLoading) return;
+    clearTimeout(chatSyncTimer);
+    chatSyncTimer = setTimeout(() => {
+      if (currentUser?.uid !== uid) return;
+      syncChatsToCloud(false, uid).catch(error => {
+        console.error('Gozie AI cloud chat sync failed:', error);
+        notify('Could not sync chats to your account. Check your connection.');
+      });
+    }, 500);
+  }
+
+  // Save current conversations without deleting cloud records that may have
+  // been added from another device since this device last loaded the account.
+  async function syncChatsToCloud(force = false, uid = currentUser?.uid) {
+    if (!uid || !firestoreDb || (cloudLoading && !force)) return;
+    if (currentUser?.uid !== uid) return;
+    const writes = chats.map(chat => firestoreSdk.setDoc(
+      firestoreSdk.doc(firestoreDb, 'users', uid, 'chats', chat.id),
+      chat
+    ));
+    await Promise.all(writes);
+  }
+
+  async function deleteChatsFromCloud(ids, uid = currentUser?.uid) {
+    if (!uid || !firestoreDb || !ids.length || currentUser?.uid !== uid) return;
+    await Promise.all(ids.map(id => firestoreSdk.deleteDoc(
+      firestoreSdk.doc(firestoreDb, 'users', uid, 'chats', id)
+    )));
+  }
+
+  async function ensureUserProfile(user) {
+    const uid = user.uid;
+    const profileRef = firestoreSdk.doc(firestoreDb, 'users', uid);
+    const profileSnap = await firestoreSdk.getDoc(profileRef);
+    const existing = profileSnap.exists() ? profileSnap.data() : {};
+    await firestoreSdk.setDoc(profileRef, {
+      uid,
+      email: user.email || '',
+      displayName: user.displayName || '',
+      createdAt: existing.createdAt || Date.now(),
+      updatedAt: Date.now()
+    }, { merge: true });
+  }
+
+  async function savePreferencesToCloud(force = false, uid = currentUser?.uid) {
+    if (!uid || !firestoreDb || (cloudLoading && !force)) return;
+    if (currentUser?.uid !== uid) return;
+    const preferences = {
+      theme: localStorage.getItem(STORAGE.theme) || 'dark',
+      accent: localStorage.getItem(STORAGE.accent) || '#ed8244',
+      searchEnabled: localStorage.getItem(STORAGE.searchEnabled) === 'true',
+      updatedAt: Date.now()
+    };
+    // Keep preferences under /users/{uid}/settings/preferences so the path
+    // matches the Firestore security rules published during setup.
+    await firestoreSdk.setDoc(
+      firestoreSdk.doc(firestoreDb, 'users', uid, 'settings', 'preferences'),
+      preferences,
+      { merge: true }
+    );
+    localStorage.setItem(userCacheKey(uid, 'preferences'), JSON.stringify(preferences));
+  }
+
+  function schedulePreferenceSync() {
+    const uid = currentUser?.uid;
+    if (!uid || !firestoreDb || cloudLoading) return;
+    clearTimeout(preferenceSyncTimer);
+    preferenceSyncTimer = setTimeout(() => {
+      if (currentUser?.uid !== uid) return;
+      savePreferencesToCloud(false, uid).catch(error => {
+        console.error('Gozie AI preference sync failed:', error);
+        notify('Could not sync your settings. Check your connection.');
+      });
+    }, 400);
+  }
+
+  async function loadAccountCloudData(user) {
+    if (!firestoreDb || !user) return;
+    const uid = user.uid;
+    const loadVersion = ++cloudLoadVersion;
+    cloudLoading = true;
+    activeCloudUid = uid;
+    try {
+      // The user profile document is created automatically on first sign-in.
+      await ensureUserProfile(user);
+      if (currentUser?.uid !== uid) return;
+
+      const chatsRef = firestoreSdk.collection(firestoreDb, 'users', uid, 'chats');
+      const preferencesRef = firestoreSdk.doc(firestoreDb, 'users', uid, 'settings', 'preferences');
+      const [cloudChats, prefsSnap] = await Promise.all([
+        firestoreSdk.getDocs(chatsRef),
+        firestoreSdk.getDoc(preferencesRef)
+      ]);
+      if (currentUser?.uid !== uid) return;
+
+      if (cloudChats.empty) {
+        // First sign-in migration: copy this browser's guest conversations
+        // only when this account has no cloud conversations yet.
+        chats = guestSnapshot.chats.map(chat => ({
+          ...chat,
+          messages: Array.isArray(chat.messages) ? chat.messages.map(message => ({ ...message })) : []
+        }));
+        await syncChatsToCloud(true, uid);
+      } else {
+        chats = cloudChats.docs.map(item => item.data())
+          .filter(chat => chat && typeof chat.id === 'string' && Array.isArray(chat.messages))
+          .sort((a, b) => (b.updated || 0) - (a.updated || 0));
+      }
+
+      if (prefsSnap.exists()) {
+        const prefs = prefsSnap.data();
+        if (['light', 'dark', 'system'].includes(prefs.theme)) {
+          localStorage.setItem(STORAGE.theme, prefs.theme);
+        }
+        if (/^#[0-9a-fA-F]{6}$/.test(prefs.accent || '')) {
+          localStorage.setItem(STORAGE.accent, prefs.accent);
+        }
+        localStorage.setItem(STORAGE.searchEnabled, String(!!prefs.searchEnabled));
+      } else {
+        // Preserve this browser's current guest preferences when creating the
+        // signed-in account's first preferences document.
+        localStorage.setItem(STORAGE.theme, guestSnapshot.theme);
+        localStorage.setItem(STORAGE.accent, guestSnapshot.accent);
+        localStorage.setItem(STORAGE.searchEnabled, String(guestSnapshot.searchEnabled));
+        await savePreferencesToCloud(true, uid);
+      }
+
+      if (currentUser?.uid !== uid) return;
+      currentId = chats[0]?.id || null;
+      localStorage.setItem(userCacheKey(uid, 'chats'), JSON.stringify(chats));
+      setTheme(localStorage.getItem(STORAGE.theme) || 'dark');
+      setAccent(localStorage.getItem(STORAGE.accent) || '#ed8244');
+      $('customAccent').value = localStorage.getItem(STORAGE.accent) || '#ed8244';
+      setSearchEnabled(localStorage.getItem(STORAGE.searchEnabled) === 'true');
+      renderHistory();
+      renderChat();
+      notify('Your account data has been synced.');
+    } catch (error) {
+      console.error('Gozie AI cloud data load failed:', error);
+      notify('Could not load your account data. Please check your connection and Firestore rules.');
+    } finally {
+      if (loadVersion === cloudLoadVersion) cloudLoading = false;
+    }
   }
   function currentChat() { return chats.find(chat => chat.id === currentId) || null; }
   function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
@@ -450,16 +639,81 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   }
   function renderHistory() {
     const root=$('history'); const query=$('searchChats').value.trim().toLowerCase(); root.replaceChildren();
-    const sorted=[...chats].sort((a,b)=>(b.updated||0)-(a.updated||0));
+    const sorted=[...chats].sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned)||(b.updated||0)-(a.updated||0));
     $('historyCount').textContent=String(sorted.length);
+    $('historyManage').classList.toggle('show',selectionMode);
+    const selectedVisible=sorted.filter(chat=>selectedChatIds.has(chat.id)).length;
+    $('deleteSelectedChats').disabled=selectedChatIds.size===0;
+    $('deleteSelectedChats').textContent=selectedChatIds.size ? `Delete selected (${selectedChatIds.size})` : 'Delete selected';
+    $('selectAllChats').textContent=sorted.length && sorted.every(chat=>selectedChatIds.has(chat.id)) ? 'Deselect all' : 'Select all';
     const visible=sorted.filter(chat => !query || (chat.title||'New chat').toLowerCase().includes(query) || chat.messages.some(m=>(m.content||'').toLowerCase().includes(query)));
     if (!visible.length) { const empty=document.createElement('div'); empty.className='history-empty'; empty.textContent=query?'No matching conversations.':'Your conversations will appear here.'; root.appendChild(empty); return; }
     visible.forEach(chat=>{
+      const entry=document.createElement('div'); entry.className='history-entry';
       const button=document.createElement('button'); button.type='button'; button.className='history-item'+(chat.id===currentId?' active':'');
       button.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-2 2v-9.5A7.5 7.5 0 0 1 10.5 4H12a8 8 0 0 1 8 7.5Z"/></svg>';
       const title=document.createElement('span'); title.className='history-title'; title.textContent=chat.title||'New chat'; button.appendChild(title);
-      button.addEventListener('click',()=>{ currentId=chat.id; showView('chat'); renderChat(); closeSidebar(); }); root.appendChild(button);
+      if(chat.pinned){ const pin=document.createElementNS('http://www.w3.org/2000/svg','svg'); pin.setAttribute('viewBox','0 0 24 24'); pin.setAttribute('fill','none'); pin.setAttribute('stroke','currentColor'); pin.setAttribute('stroke-width','2'); pin.setAttribute('stroke-linecap','round'); pin.classList.add('pin-mark'); pin.innerHTML='<path d="m16 3 5 5-4 1-4 4-1 5-2-2-4 4-1-1 4-4-2-2 5-1 4-4 1-5Z"/>'; button.appendChild(pin); }
+      if(selectionMode){
+        const check=document.createElement('input'); check.type='checkbox'; check.className='history-check'; check.checked=selectedChatIds.has(chat.id); check.setAttribute('aria-label','Select '+(chat.title||'conversation'));
+        check.addEventListener('change',()=>{check.checked?selectedChatIds.add(chat.id):selectedChatIds.delete(chat.id);renderHistory();});
+        button.addEventListener('click',()=>{selectedChatIds.has(chat.id)?selectedChatIds.delete(chat.id):selectedChatIds.add(chat.id);renderHistory();});
+        entry.append(button,check);
+      } else {
+        button.addEventListener('click',()=>{ if(suppressNextHistoryClick){suppressNextHistoryClick=false;return;} currentId=chat.id; showView('chat'); renderChat(); closeSidebar(); });
+        attachLongPress(button,chat.id);
+        entry.appendChild(button);
+      }
+      root.appendChild(entry);
     });
+  }
+  function attachLongPress(element,chatId){
+    const start=()=>{clearTimeout(longPressTimer);longPressTimer=setTimeout(()=>{suppressNextHistoryClick=true;showChatContextMenu(chatId,element);},550);};
+    const cancel=()=>clearTimeout(longPressTimer);
+    element.addEventListener('pointerdown',start);
+    ['pointerup','pointerleave','pointercancel'].forEach(type=>element.addEventListener(type,cancel));
+    element.addEventListener('contextmenu',event=>{event.preventDefault();suppressNextHistoryClick=true;showChatContextMenu(chatId,element);});
+  }
+  function closeChatContextMenu(){ if(contextMenuNode){contextMenuNode.remove();contextMenuNode=null;} }
+  function showChatContextMenu(chatId,anchor){
+    closeChatContextMenu(); const chat=chats.find(item=>item.id===chatId); if(!chat)return;
+    const menu=document.createElement('div'); menu.className='chat-context-menu';
+    const pin=document.createElement('button'); pin.type='button'; pin.textContent=chat.pinned?'Unpin chat':'Pin chat';
+    pin.addEventListener('click',()=>{chat.pinned=!chat.pinned;saveChats();closeChatContextMenu();notify(chat.pinned?'Chat pinned.':'Chat unpinned.');});
+    const del=document.createElement('button'); del.type='button'; del.className='danger'; del.textContent='Delete chat';
+    del.addEventListener('click',()=>{deleteChats([chatId]);closeChatContextMenu();});
+    menu.append(pin,del); document.body.appendChild(menu); contextMenuNode=menu;
+    const rect=anchor.getBoundingClientRect(); const width=160; const left=Math.max(8,Math.min(rect.left,window.innerWidth-width-8)); const top=Math.max(8,Math.min(rect.bottom+4,window.innerHeight-100));
+    menu.style.left=left+'px';menu.style.top=top+'px';
+    setTimeout(()=>document.addEventListener('pointerdown',outsideContextMenu,{once:true}),0);
+  }
+  function outsideContextMenu(event){if(contextMenuNode&&!contextMenuNode.contains(event.target)){closeChatContextMenu();}}
+  function deleteChats(ids){
+    const deleting=new Set(ids);
+    const uid=currentUser?.uid||null;
+    chats=chats.filter(chat=>!deleting.has(chat.id));
+    ids.forEach(id=>selectedChatIds.delete(id));
+    if(deleting.has(currentId)){currentId=chats[0]?.id||null;renderChat();}
+    saveChats();
+    if(uid && firestoreDb){
+      deleteChatsFromCloud(ids,uid).catch(error=>{
+        console.error('Gozie AI cloud chat deletion failed:',error);
+        notify('The chat was removed here, but its cloud deletion failed. Check your connection.');
+      });
+    }
+    renderHistory();
+    notify(ids.length===1?'Conversation deleted.':`${ids.length} conversations deleted.`);
+  }
+  function startBulkDelete(){
+    if(!chats.length){notify('There are no conversations to manage.');return;}
+    selectionMode=true;selectedChatIds.clear();showView('chat');openSidebar();renderHistory();
+  }
+  function exitBulkDelete(){selectionMode=false;selectedChatIds.clear();renderHistory();}
+  function deleteSelectedChats(){
+    if(!selectedChatIds.size)return;
+    const count=selectedChatIds.size;
+    if(!confirm(`Delete ${count} selected conversation${count===1?'':'s'}? This cannot be undone.`))return;
+    deleteChats([...selectedChatIds]);exitBulkDelete();
   }
   function addMessage(role,content) {
     let chat=currentChat(); if (!chat) { const created={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(created); currentId=created.id; chat=created; }
@@ -477,6 +731,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   function setTheme(choice) {
     const value=['light','dark','system'].includes(choice)?choice:'dark';
     localStorage.setItem(STORAGE.theme,value);
+    schedulePreferenceSync();
     const dark=value==='dark' || (value==='system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.body.classList.toggle('light',!dark);
     document.querySelectorAll('[data-theme-choice]').forEach(btn=>btn.classList.toggle('selected',btn.dataset.themeChoice===value));
@@ -486,6 +741,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     document.documentElement.style.setProperty('--accent',value);
     document.documentElement.style.setProperty('--accent-soft',hexToRgba(value,.12));
     localStorage.setItem(STORAGE.accent,value);
+    schedulePreferenceSync();
     $('customAccent').value=value;
     document.querySelectorAll('.accent-option').forEach(btn=>btn.classList.toggle('selected',btn.dataset.accent===value));
     if(custom) notify('Custom accent colour applied.');
@@ -578,6 +834,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   function setSearchEnabled(value) {
     searchEnabled=!!value;
     localStorage.setItem(STORAGE.searchEnabled,String(searchEnabled));
+    schedulePreferenceSync();
     $('webSearchToggle').classList.toggle('active',searchEnabled);
     $('webSearchToggle').setAttribute('aria-pressed',String(searchEnabled));
   }
@@ -587,11 +844,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     $('customAccent').value=accent;
     setSearchEnabled(searchEnabled);
   }
-  function clearHistory() {
-    if(!confirm('Delete all conversations saved on this device? This cannot be undone.')) return;
-    chats=[]; currentId=null; saveChats(); renderChat(); notify('Chat history cleared.');
-  }
-  function about() { alert('Gozie AI\n\nYour personal AI assistant. Your conversations are saved in this browser.'); }
+  function about() { alert('Gozie AI\n\nYour personal AI assistant. When you sign in, your conversations and preferences sync to your account.'); }
   function openAuth() { $('authOverlay').classList.add('open'); updateAuthMode(); setTimeout(()=>$('authEmail').focus(),80); }
   function closeAuth() { $('authOverlay').classList.remove('open'); }
   function authMessage(text,type='error') { const el=$('authMessage'); el.textContent=text; el.className='auth-message show '+type; }
@@ -644,7 +897,10 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   $('drawerScrim').addEventListener('click',closeSidebar);
   $('newChat').addEventListener('click',newChat);
   $('searchChats').addEventListener('input',renderHistory);
-  $('clearHistory').addEventListener('click',clearHistory);
+  $('manageChatHistory').addEventListener('click',startBulkDelete);
+  $('selectAllChats').addEventListener('click',()=>{const all=chats.every(chat=>selectedChatIds.has(chat.id));if(all)selectedChatIds.clear();else chats.forEach(chat=>selectedChatIds.add(chat.id));renderHistory();});
+  $('deleteSelectedChats').addEventListener('click',deleteSelectedChats);
+  $('cancelChatSelection').addEventListener('click',exitBulkDelete);
   $('aboutButton').addEventListener('click',about);
   $('openSettings').addEventListener('click',()=>showView('settings'));
   $('settingsButton').addEventListener('click',()=>{ if(currentView==='settings'){showView('chat');renderChat();} else showView('settings'); });
@@ -682,7 +938,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     finally { submit.disabled=false; submit.textContent=createAccountMode?'Create account':'Sign in'; }
   });
   document.addEventListener('keydown',event=>{
-    if(event.key==='Escape'){closeSidebar();closeAuth();}
+    if(event.key==='Escape'){closeSidebar();closeAuth();closeChatContextMenu();if(selectionMode)exitBulkDelete();}
     if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();newChat();}
   });
 
@@ -704,16 +960,49 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   let firebaseCreateUser, firebaseEmailSignIn, firebaseSignOut, firebaseSendPasswordResetEmail;
   (async()=>{
     try {
-      const [appSdk,authSdk]=await Promise.all([
+      const [appSdk,authSdk,dbSdk]=await Promise.all([
         import('https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js'),
-        import('https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js')
+        import('https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js'),
+        import('https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js')
       ]);
       const app=appSdk.initializeApp(firebaseConfig); auth=authSdk.getAuth(app);
+      firestoreDb=dbSdk.getFirestore(app);
+      firestoreSdk=dbSdk;
       firebaseCreateUser=authSdk.createUserWithEmailAndPassword;
       firebaseEmailSignIn=authSdk.signInWithEmailAndPassword;
       firebaseSignOut=authSdk.signOut;
       firebaseSendPasswordResetEmail=authSdk.sendPasswordResetEmail;
-      authSdk.onAuthStateChanged(auth,user=>{currentUser=user;updateAccountUI();});
+      authSdk.onAuthStateChanged(auth, async user=>{
+        const previousUid=activeCloudUid;
+        if (user && !currentUser) {
+          // Capture the latest guest workspace immediately before first account sync.
+          guestSnapshot.chats=JSON.parse(JSON.stringify(chats));
+          guestSnapshot.theme=localStorage.getItem(STORAGE.theme)||'dark';
+          guestSnapshot.accent=localStorage.getItem(STORAGE.accent)||'#ed8244';
+          guestSnapshot.searchEnabled=localStorage.getItem(STORAGE.searchEnabled)==='true';
+        }
+        currentUser=user;
+        updateAccountUI();
+        if (user) {
+          await loadAccountCloudData(user);
+        } else if (previousUid) {
+          // Signing out returns to this browser's separate guest workspace.
+          cloudLoadVersion++;
+          cloudLoading=false;
+          clearTimeout(chatSyncTimer);
+          clearTimeout(preferenceSyncTimer);
+          activeCloudUid=null;
+          chats=guestSnapshot.chats.slice();
+          currentId=chats[0]?.id||null;
+          localStorage.setItem(STORAGE.theme,guestSnapshot.theme);
+          localStorage.setItem(STORAGE.accent,guestSnapshot.accent);
+          localStorage.setItem(STORAGE.searchEnabled,String(guestSnapshot.searchEnabled));
+          setTheme(guestSnapshot.theme); setAccent(guestSnapshot.accent);
+          $('customAccent').value=guestSnapshot.accent;
+          setSearchEnabled(guestSnapshot.searchEnabled);
+          renderHistory(); renderChat();
+        }
+      });
       authReady=true; updateAccountUI();
     } catch(error) {
       console.error('Gozie AI Firebase initialization error:',error);
