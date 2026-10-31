@@ -933,8 +933,11 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     try {
       if(createAccountMode) {
         const credential = await firebaseCreateUser(auth,email,password);
-        await firebaseSendEmailVerification(credential.user);
-        await firebaseSignOut(auth);
+        try {
+          await firebaseSendEmailVerification(credential.user);
+        } finally {
+          await firebaseSignOut(auth);
+        }
         authMessage('Account created. We sent a verification link to '+email+'. Open that email and click the verification link before signing in. Check your spam folder if you do not see it.','success');
       } else {
         const credential = await firebaseEmailSignIn(auth,email,password);
@@ -987,6 +990,12 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       firebaseSendPasswordResetEmail=authSdk.sendPasswordResetEmail;
       firebaseSendEmailVerification=authSdk.sendEmailVerification;
       authSdk.onAuthStateChanged(auth, async user=>{
+        if (user && !user.emailVerified) {
+          currentUser=null;
+          updateAccountUI();
+          await authSdk.signOut(auth);
+          return;
+        }
         const previousUid=activeCloudUid;
         if (user && !currentUser) {
           // Capture the latest guest workspace immediately before first account sync.
