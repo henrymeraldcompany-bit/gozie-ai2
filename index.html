@@ -1,1048 +1,544 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#111827">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta id="themeColorMeta" name="theme-color" content="#18191b">
+<meta name="description" content="Gozie AI — a thoughtful chat companion on your terms.">
 <title>Gozie AI</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
-
 <style>
-:root {
-  --accent: #7c5cff;
-  --bg: #0d1117;
-  --panel: #151b25;
-  --panel2: #1d2532;
-  --text: #f3f4f6;
-  --muted: #9ca3af;
-  --border: #2c3544;
+:root{
+  color-scheme:dark;
+  --accent:#ed8244;
+  --accent-rgb:237,130,68;
+  --bg:#18191b;
+  --header:#202123;
+  --panel:#202123;
+  --panel-2:#282a2d;
+  --panel-3:#33363a;
+  --text:#f1f1f2;
+  --muted:#a1a4aa;
+  --muted-2:#747980;
+  --border:#35383d;
+  --green:#19aa7c;
+  --shadow:0 18px 55px rgba(0,0,0,.32);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
 }
-
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  height: 100dvh;
-  overflow: hidden;
-  background: var(--bg);
-  color: var(--text);
-  font: 15px system-ui, sans-serif;
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0}
+body{overflow:hidden;background:var(--bg);color:var(--text);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit}
+button{color:inherit;-webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.55;cursor:not-allowed!important}
+svg{display:block}
+.app{width:100%;height:100dvh;display:flex;flex-direction:column;min-height:0;background:var(--bg)}
+/* Shared header */
+.topbar{height:72px;min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 28px;background:var(--header);border-bottom:1px solid var(--border);position:relative;z-index:8}
+.topbar-left,.topbar-right{display:flex;align-items:center;gap:13px;min-width:0}
+.icon-btn{width:42px;height:42px;flex:0 0 auto;display:grid;place-items:center;padding:0;border:1px solid transparent;border-radius:12px;background:transparent;color:var(--muted);cursor:pointer;transition:.18s}
+.icon-btn:hover{color:var(--text);background:var(--panel-2);border-color:var(--border)}
+.icon-btn svg{width:22px;height:22px}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.brand-mark{width:52px;height:52px;flex:0 0 52px;display:grid;place-items:center;border-radius:15px;color:#fff;background:linear-gradient(145deg,#f39a5c,#e97834);box-shadow:0 8px 22px rgba(237,130,68,.2)}
+.brand-mark svg{width:31px;height:31px}
+.brand-name{font-size:19px;font-weight:850;letter-spacing:-.55px;white-space:nowrap}
+.brand-name span{color:var(--accent)}
+.model-wrap{position:relative}
+.model-select{height:46px;max-width:210px;display:flex;align-items:center;gap:10px;padding:0 13px;border:1px solid transparent;border-radius:14px;background:var(--panel-2);color:var(--text);font-weight:650;font-size:13px;cursor:pointer;white-space:nowrap}
+.model-select:hover{border-color:var(--border)}
+.model-select .model-spark{color:var(--accent);width:23px;height:23px}
+.model-select .chevron{width:16px;height:16px;color:var(--muted)}
+.connection-dot{width:11px;height:11px;border-radius:50%;background:#858a91;flex:0 0 auto;box-shadow:0 0 0 4px rgba(133,138,145,.08)}
+.connection-dot.online{background:#20b987;box-shadow:0 0 0 4px rgba(32,185,135,.12)}
+.connection-dot.offline{background:#d85d5d;box-shadow:0 0 0 4px rgba(216,93,93,.12)}
+.model-menu{position:absolute;right:0;top:calc(100% + 9px);z-index:30;width:240px;padding:8px;border:1px solid var(--border);border-radius:15px;background:var(--panel);box-shadow:var(--shadow);display:none}
+.model-menu.open{display:block}
+.model-menu button{width:100%;display:flex;align-items:center;gap:10px;padding:12px;border:0;border-radius:10px;background:transparent;color:var(--text);text-align:left;cursor:pointer}
+.model-menu button:hover{background:var(--panel-2)}
+.model-menu small{display:block;color:var(--muted);font-size:11px;font-weight:450}
+/* Drawer */
+.drawer-backdrop{position:fixed;inset:0;z-index:18;background:rgba(0,0,0,.48);opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s}
+.drawer-backdrop.show{opacity:1;visibility:visible}
+.sidebar{position:fixed;z-index:20;inset:0 auto 0 0;width:min(82vw,540px);max-width:540px;padding:24px 25px max(18px,var(--safe-bottom));display:flex;flex-direction:column;background:var(--bg);border-right:1px solid var(--border);box-shadow:var(--shadow);transform:translateX(-105%);transition:transform .24s ease}
+.sidebar.open{transform:translateX(0)}
+.sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:27px;padding:0 8px}
+.sidebar-brand{display:flex;align-items:center;gap:14px;min-width:0}
+.sidebar-brand .brand-mark{width:62px;height:62px;flex-basis:62px;border-radius:17px}
+.sidebar-brand .brand-mark svg{width:37px;height:37px}
+.sidebar-brand .brand-name{font-size:24px}
+.drawer-close{font-size:0}
+.drawer-close svg{width:24px;height:24px}
+.drawer-new{height:72px;min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px;margin-bottom:27px;border:1px solid var(--border);border-radius:17px;background:var(--panel);font-size:17px;font-weight:700;cursor:pointer}
+.drawer-new:hover{border-color:rgba(var(--accent-rgb),.65);background:var(--panel-2)}
+.drawer-new .new-left{display:flex;align-items:center;gap:15px}
+.drawer-new .plus{font-size:29px;font-weight:350;color:var(--accent);line-height:1}
+.shortcut{padding:4px 9px;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;font-weight:550}
+.history-search{height:70px;display:flex;align-items:center;gap:13px;padding:0 20px;margin-bottom:31px;border:1px solid var(--border);border-radius:16px;background:transparent}
+.history-search svg{width:25px;height:25px;flex:0 0 auto;color:var(--muted-2)}
+.history-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:var(--text);font-size:17px}
+.history-search input::placeholder{color:var(--muted-2)}
+.history-caption{display:flex;align-items:center;justify-content:space-between;padding:0 13px;margin-bottom:16px;color:var(--muted-2);font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
+.history{flex:1;min-height:60px;overflow:auto;padding-bottom:18px;scrollbar-width:thin;scrollbar-color:var(--panel-3) transparent}
+.history-empty{padding:22px 12px;color:var(--muted-2);font-size:13px;text-align:center}
+.history-item{width:100%;display:flex;align-items:center;gap:15px;padding:17px 16px;margin:2px 0;border:1px solid transparent;border-radius:15px;background:transparent;color:var(--muted);font-size:17px;text-align:left;cursor:pointer;transition:background .16s,border-color .16s,color .16s}
+.history-item:hover{background:var(--panel-2);color:var(--text)}
+.history-item.active{background:#34373c;color:var(--text)}
+.history-item svg{width:24px;height:24px;flex:0 0 auto;color:var(--muted-2)}
+.history-item span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sidebar-footer{border-top:1px solid var(--border);padding-top:23px}
+.storage-status{display:flex;align-items:center;gap:12px;padding:0 10px 24px;color:var(--muted-2);font-size:16px}
+.storage-status i{width:13px;height:13px;border-radius:50%;background:#28b987;box-shadow:0 0 0 5px rgba(40,185,135,.12)}
+.footer-actions{display:flex;align-items:center;gap:8px}
+.footer-action{flex:1;display:flex;align-items:center;gap:13px;padding:13px 9px;border:0;border-radius:12px;background:transparent;color:var(--muted);font-size:17px;text-align:left;cursor:pointer}
+.footer-action:hover{background:var(--panel-2);color:var(--text)}
+.footer-action svg{width:24px;height:24px}
+/* Pages */
+.page{display:none;flex:1;min-height:0;overflow:hidden}
+.page.active{display:flex;flex-direction:column}
+.chat-page{background:radial-gradient(ellipse at 50% 10%,rgba(var(--accent-rgb),.035),transparent 43%),var(--bg)}
+.messages{flex:1;min-height:0;overflow:auto;padding:30px 25px 20px;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:var(--panel-3) transparent}
+.thread{width:100%;max-width:760px;min-height:100%;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.welcome{width:100%;min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 0 44px;text-align:center}
+.welcome-logo{width:94px;height:94px;display:grid;place-items:center;margin-bottom:31px;border:1px solid rgba(var(--accent-rgb),.23);border-radius:30px;background:rgba(var(--accent-rgb),.095);box-shadow:0 12px 35px rgba(var(--accent-rgb),.075)}
+.welcome-logo svg{width:52px;height:52px;color:var(--accent)}
+.eyebrow{margin-bottom:17px;color:var(--accent);font-size:15px;font-weight:850;letter-spacing:3px;text-transform:uppercase}
+.welcome h1{margin:0;color:var(--text);font-size:clamp(32px,5vw,46px);line-height:1.12;font-weight:850;letter-spacing:-1.9px}
+.welcome p{max-width:640px;margin:28px 0 0;color:var(--muted);font-size:clamp(16px,2vw,21px);line-height:1.7}
+.suggestions{width:100%;display:grid;grid-template-columns:1fr;gap:13px;margin-top:43px;text-align:left}
+.suggestion{position:relative;width:100%;min-height:91px;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:15px 19px;border:1.5px solid var(--border);border-radius:19px;background:var(--panel);color:var(--text);text-align:left;cursor:pointer;transition:border-color .16s,background .16s,transform .16s}
+.suggestion:hover{transform:translateY(-2px);border-color:rgba(var(--accent-rgb),.58);background:var(--panel-2)}
+.suggestion strong{font-size:16px;font-weight:750}
+.suggestion small{color:var(--muted-2);font-size:15px}
+.suggestion .arrow{position:absolute;right:19px;top:22px;color:var(--accent);font-size:19px}
+.message-row{display:flex;align-items:flex-start;gap:12px;width:100%}
+.message-row.user{justify-content:flex-end}
+.message-avatar{width:39px;height:39px;flex:0 0 39px;display:grid;place-items:center;border:1px solid rgba(var(--accent-rgb),.22);border-radius:13px;background:rgba(var(--accent-rgb),.1);color:var(--accent);font-weight:850}
+.message-content{max-width:min(86%,680px);min-width:0}
+.message-meta{margin:0 5px 6px;color:var(--muted-2);font-size:12px}
+.message-row.user .message-meta{text-align:right}
+.message-bubble{padding:14px 17px;border:1px solid var(--border);border-radius:5px 16px 16px 16px;background:var(--panel);color:var(--text);font-size:15px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.message-row.user .message-bubble{border-color:rgba(var(--accent-rgb),.3);border-radius:16px 5px 16px 16px;background:rgba(var(--accent-rgb),.12)}
+.typing{display:inline-flex;gap:5px;padding:5px 0}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:bounce 1s infinite ease-in-out}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,70%,100%{transform:translateY(0);opacity:.45}35%{transform:translateY(-5px);opacity:1}}
+/* Composer */
+.composer-wrap{width:100%;padding:12px 25px max(18px,var(--safe-bottom));background:linear-gradient(180deg,transparent,var(--bg) 17%)}
+.composer-inner{width:100%;max-width:820px;margin:0 auto}
+.composer{display:flex;flex-direction:column;gap:13px;min-height:122px;padding:14px 16px 12px;border:1.5px solid var(--border);border-radius:22px;background:var(--panel);box-shadow:0 9px 28px rgba(0,0,0,.1);transition:border-color .18s,box-shadow .18s}
+.composer:focus-within{border-color:rgba(var(--accent-rgb),.55);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.075)}
+.composer textarea{width:100%;min-height:37px;max-height:140px;resize:none;padding:4px 10px;border:0;outline:0;background:transparent;color:var(--text);font-size:19px;line-height:1.5}
+.composer textarea::placeholder{color:var(--muted-2)}
+.composer-controls{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.composer-tools{display:flex;align-items:center;gap:17px;flex-wrap:wrap}
+.web-toggle-wrap{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:15px;font-weight:650}
+.web-toggle-wrap svg{width:24px;height:24px;color:var(--muted)}
+.switch{position:relative;width:48px;height:27px;display:inline-block;flex:0 0 auto}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch span{position:absolute;inset:0;border-radius:30px;background:var(--panel-3);cursor:pointer;transition:.2s}
+.switch span::before{content:"";position:absolute;width:19px;height:19px;left:4px;top:4px;border-radius:50%;background:#777d84;transition:.2s}
+.switch input:checked+span{background:rgba(var(--accent-rgb),.4)}
+.switch input:checked+span::before{transform:translateX(21px);background:var(--accent)}
+.switch input:focus-visible+span{outline:2px solid var(--accent);outline-offset:3px}
+.current-model{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;white-space:nowrap}
+.current-model svg{width:23px;height:23px;color:var(--accent)}
+.send-btn{width:59px;height:59px;flex:0 0 59px;display:grid;place-items:center;padding:0;border:0;border-radius:17px;background:rgba(var(--accent-rgb),.77);color:white;cursor:pointer;transition:filter .18s,transform .18s}
+.send-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.send-btn:disabled{opacity:.35}
+.send-btn svg{width:28px;height:28px}
+.privacy-note{display:flex;align-items:flex-start;gap:11px;margin:15px 2px 0;color:var(--muted-2);font-size:13px;line-height:1.55}
+.privacy-note svg{width:22px;height:22px;flex:0 0 22px;color:var(--muted-2)}
+.status-message{min-height:16px;margin:6px 2px 0;color:var(--accent);font-size:12px;text-align:center}
+/* Settings screen */
+.settings-page{overflow:auto;background:var(--bg);scrollbar-width:thin;scrollbar-color:var(--panel-3) transparent}
+.settings-topbar{justify-content:space-between}
+.settings-content{width:100%;max-width:860px;margin:0 auto;padding:48px 30px 60px}
+.settings-eyebrow{margin:0 0 17px;color:var(--accent);font-size:14px;font-weight:850;letter-spacing:3px}
+.settings-content h1{margin:0;font-size:46px;line-height:1.1;letter-spacing:-1.8px}
+.settings-intro{max-width:690px;margin:23px 0 39px;color:var(--muted);font-size:19px;line-height:1.7}
+.setting-card{padding:34px 29px;margin:0 0 20px;border:1.5px solid var(--border);border-radius:25px;background:var(--panel)}
+.setting-card-head{display:flex;align-items:center;gap:18px;margin-bottom:30px}
+.setting-icon{width:65px;height:65px;flex:0 0 65px;display:grid;place-items:center;border-radius:19px;background:rgba(var(--accent-rgb),.1);color:var(--accent)}
+.setting-icon svg{width:34px;height:34px}
+.setting-card-head h2{margin:0;font-size:23px;letter-spacing:-.55px}
+.setting-card-head p{margin:5px 0 0;color:var(--muted);font-size:16px}
+.setting-label{display:block;margin:0 0 13px;color:var(--muted);font-size:16px;font-weight:700}
+.theme-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-bottom:35px}
+.theme-choice{height:76px;display:flex;align-items:center;justify-content:center;gap:12px;padding:8px;border:1.5px solid var(--border);border-radius:18px;background:transparent;color:var(--muted);font-size:17px;cursor:pointer}
+.theme-choice svg{width:28px;height:28px}
+.theme-choice.active{border-color:rgba(var(--accent-rgb),.8);background:rgba(var(--accent-rgb),.075);color:var(--accent);font-weight:750}
+.theme-choice .check{display:none;width:18px;height:18px}
+.theme-choice.active .check{display:block}
+.accent-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.accent-choice{min-height:65px;display:flex;align-items:center;gap:14px;padding:10px 16px;border:1.5px solid var(--border);border-radius:17px;background:transparent;color:var(--muted);font-size:16px;text-align:left;cursor:pointer}
+.accent-choice:hover{background:var(--panel-2)}
+.accent-choice.active{border-color:rgba(var(--accent-rgb),.75);background:rgba(var(--accent-rgb),.07);color:var(--text)}
+.accent-dot{width:23px;height:23px;flex:0 0 23px;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(255,255,255,.12)}
+.accent-check{margin-left:auto;color:var(--accent);font-size:21px;display:none}
+.accent-choice.active .accent-check{display:block}
+.setting-field{margin:0 0 20px}
+.setting-field label{display:block;margin-bottom:9px;color:var(--muted);font-size:14px;font-weight:700}
+.setting-field input{width:100%;height:53px;padding:0 15px;border:1.5px solid var(--border);border-radius:14px;background:var(--bg);color:var(--text);font-size:15px;outline:0}
+.setting-help{margin:7px 0 0;color:var(--muted-2);font-size:12px;line-height:1.55}
+.primary-action{min-height:49px;display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:0 20px;border:0;border-radius:13px;background:var(--accent);color:white;font-weight:750;cursor:pointer}
+.secondary-action{min-height:45px;padding:0 17px;border:1.5px solid var(--border);border-radius:13px;background:transparent;color:var(--text);font-weight:650;cursor:pointer}
+.model-actions{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.inline-status{margin-top:13px;color:var(--muted);font-size:13px;min-height:20px}
+.inline-status.good{color:#31bd91}.inline-status.bad{color:#e17c7c}
+.account-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 0;border-top:1px solid var(--border)}
+.account-row:first-of-type{border-top:0}
+.account-copy strong{display:block;font-size:15px}.account-copy small{display:block;margin-top:4px;color:var(--muted);font-size:13px}
+/* Auth modal: email/password only */
+.auth-overlay{position:fixed;z-index:50;inset:0;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.72);backdrop-filter:blur(9px);overflow:auto}
+.auth-overlay.open{display:flex}
+.auth-card{position:relative;width:100%;max-width:420px;padding:31px 25px 25px;border:1px solid var(--border);border-radius:24px;background:var(--panel);box-shadow:var(--shadow)}
+.auth-close{position:absolute;right:12px;top:12px}
+.auth-brand{width:58px;height:58px;display:grid;place-items:center;margin:0 auto 18px;border-radius:18px;background:var(--accent);color:#fff;font-size:27px;font-weight:850}
+.auth-card h2{margin:0;text-align:center;font-size:26px}
+.auth-subtitle{margin:8px 0 25px;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
+.auth-field{margin-bottom:15px}.auth-field label{display:block;margin-bottom:7px;color:var(--muted);font-size:13px;font-weight:650}
+.auth-field input{width:100%;height:48px;padding:0 13px;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--text);outline:0}
+.auth-primary{width:100%;height:50px;margin-top:5px;border:0;border-radius:12px;background:var(--accent);color:white;font-weight:750;cursor:pointer}
+.auth-links{display:flex;justify-content:space-between;gap:12px;margin-top:16px}
+.auth-link{padding:5px 0;border:0;background:transparent;color:var(--accent);font-size:13px;cursor:pointer}
+.auth-message{display:none;margin-top:14px;padding:11px;border-radius:10px;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.auth-message.show{display:block}.auth-message.error{background:rgba(190,55,55,.13);color:#f0a0a0}.auth-message.success{background:rgba(30,160,110,.13);color:#7eddb7}
+.auth-terms{margin-top:20px;color:var(--muted-2);font-size:11px;text-align:center}
+/* Light theme */
+body[data-effective-theme="light"]{color-scheme:light;--bg:#f6f6f7;--header:#fff;--panel:#fff;--panel-2:#f0f1f3;--panel-3:#e6e7e9;--text:#202124;--muted:#777b82;--muted-2:#92969d;--border:#dedfe2;--shadow:0 18px 55px rgba(25,30,40,.14)}
+body[data-effective-theme="light"] .chat-page{background:radial-gradient(ellipse at 50% 10%,rgba(var(--accent-rgb),.045),transparent 43%),var(--bg)}
+body[data-effective-theme="light"] .drawer-backdrop{background:rgba(20,22,26,.28)}
+body[data-effective-theme="light"] .history-item.active{background:#e6e7e9}
+body[data-effective-theme="light"] .composer-wrap{background:linear-gradient(180deg,transparent,var(--bg) 17%)}
+/* Responsive layout */
+@media(min-width:900px){.settings-content{padding-top:48px}.messages{padding-top:35px}.welcome{max-width:760px;margin:0 auto}.suggestions{max-width:690px}}
+@media(max-width:700px){
+  .topbar{height:68px;min-height:68px;padding:0 17px;gap:7px}
+  .topbar-left,.topbar-right{gap:7px}
+  .topbar .icon-btn{width:38px;height:38px}
+  .brand{gap:9px}.brand-mark{width:51px;height:51px;flex-basis:51px}.brand-name{font-size:17px}
+  .model-select{height:42px;max-width:170px;padding:0 9px;gap:7px;font-size:12px}
+  .model-select .model-spark{width:21px;height:21px}
+  .connection-dot{width:9px;height:9px}
+  .sidebar{width:min(82vw,540px);padding:22px 24px max(18px,var(--safe-bottom))}
+  .messages{padding:20px 18px 14px}
+  .welcome{justify-content:center;padding:20px 0 28px}
+  .welcome-logo{width:94px;height:94px;margin-bottom:31px}
+  .welcome h1{font-size:clamp(32px,7vw,43px);letter-spacing:-1.6px}
+  .welcome p{margin-top:27px;font-size:18px;line-height:1.7}
+  .suggestions{margin-top:43px;gap:13px}
+  .suggestion{min-height:91px;padding:14px 18px}
+  .composer-wrap{padding:10px 23px max(18px,var(--safe-bottom))}
+  .composer{min-height:122px;padding:14px 15px 11px;border-radius:21px}
+  .composer textarea{font-size:18px}
+  .composer-tools{gap:13px}
+  .web-toggle-wrap{font-size:14px;gap:8px}
+  .current-model{font-size:13px;gap:6px}
+  .current-model svg{width:21px;height:21px}
+  .send-btn{width:59px;height:59px;flex-basis:59px}
+  .privacy-note{font-size:13px;margin-top:14px}
+  .settings-content{padding:48px 28px 50px}
+  .settings-content h1{font-size:45px}
+  .settings-intro{font-size:18px;margin:23px 0 39px}
+  .setting-card{padding:34px 29px;border-radius:24px}
 }
-
-button, input, textarea, select { font: inherit; }
-
-button {
-  cursor: pointer;
-  color: var(--text);
-  background: var(--panel2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px;
+@media(max-width:430px){
+  .topbar{padding:0 12px}.brand-name{font-size:15px}.brand-mark{width:46px;height:46px;flex-basis:46px;border-radius:14px}.brand-mark svg{width:28px;height:28px}
+  .model-select{max-width:147px;font-size:11px}.model-select .chevron{display:none}
+  .topbar .icon-btn{width:34px;height:36px}
+  .welcome-logo{width:85px;height:85px}.welcome-logo svg{width:47px;height:47px}
+  .eyebrow{font-size:13px;letter-spacing:2.6px}.welcome h1{font-size:34px}.welcome p{font-size:16px}
+  .suggestion strong{font-size:15px}.suggestion small{font-size:13px}
+  .composer-wrap{padding-left:14px;padding-right:14px}.composer textarea{font-size:16px}
+  .web-toggle-wrap{font-size:13px}.current-model{font-size:12px}.send-btn{width:51px;height:51px;flex-basis:51px}
+  .settings-content{padding:38px 18px 42px}.settings-content h1{font-size:39px}.settings-intro{font-size:16px}
+  .setting-card{padding:25px 19px}.setting-card-head{gap:13px}.setting-icon{width:54px;height:54px;flex-basis:54px}.setting-icon svg{width:29px;height:29px}.setting-card-head h2{font-size:20px}.setting-card-head p{font-size:14px}
+  .theme-options{gap:7px}.theme-choice{height:66px;gap:6px;font-size:13px}.theme-choice svg{width:22px;height:22px}
+  .accent-grid{gap:9px}.accent-choice{min-height:58px;padding:8px 10px;font-size:14px;gap:9px}.accent-dot{width:19px;height:19px;flex-basis:19px}
 }
-
-/* ===== GOZIE AI PREMIUM SETTINGS STYLE ===== */
-
-.settings {
-  padding: 18px 14px 14px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--panel);
-  box-shadow: 0 8px 24px rgba(0,0,0,.12);
-  gap: 16px;
-}
-
-.settings label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: .3px;
-}
-
-.settings select {
-  display: block;
-  width: 100%;
-  min-height: 48px;
-  padding: 0 14px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background-color: var(--panel2);
-  color: var(--text);
-  outline: none;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color .2s, box-shadow .2s;
-  color-scheme: dark;
-}
-
-body.light .settings select { color-scheme: light; }
-
-.settings select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent);
-}
-
-.settings input[type="color"] {
-  display: block;
-  width: 100%;
-  height: 52px;
-  padding: 5px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--panel2);
-  cursor: pointer;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s, transform .2s;
-}
-
-.settings input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
-.settings input[type="color"]::-webkit-color-swatch {
-  border: none;
-  border-radius: 9px;
-}
-.settings input[type="color"]::-moz-color-swatch {
-  border: none;
-  border-radius: 9px;
-}
-
-.settings input[type="color"]:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent);
-}
-
-.settings input[type="color"]:active { transform: scale(.98); }
-
-.settings select,
-.settings input[type="color"] { box-sizing: border-box; }
-
-.app { display: flex; height: 100dvh; }
-
-.sidebar {
-  width: 270px;
-  flex-shrink: 0;
-  background: var(--panel);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  padding: 14px;
-  gap: 12px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.logo {
-  background: var(--accent);
-  color: white;
-  border-radius: 10px;
-  padding: 7px 12px;
-}
-
-.close-sidebar {
-  display: none;
-  margin-left: auto;
-  border: none;
-  background: transparent;
-  font-size: 26px;
-  padding: 3px 10px;
-}
-
-.new-chat {
-  width: 100%;
-  text-align: left;
-  border-color: var(--accent);
-}
-
-.section-label {
-  color: var(--muted);
-  font-size: 12px;
-  text-transform: uppercase;
-}
-
-.history { flex: 1; overflow-y: auto; }
-
-.history button {
-  width: 100%;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-bottom: 4px;
-}
-
-.history button.active { border-color: var(--accent); }
-
-.settings {
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
-  display: grid;
-  gap: 8px;
-}
-
-.settings label {
-  display: block;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.settings select,
-.settings input {
-  width: 100%;
-  margin-top: 4px;
-}
-
-.main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.topbar {
-  height: 60px;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 15px;
-}
-
-.top-actions { display: flex; gap: 8px; }
-.menu-button { display: none; }
-
-.messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 14px;
-}
-
-.thread {
-  max-width: 760px;
-  margin: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.welcome {
-  text-align: center;
-  margin: auto;
-  padding: 35px 10px;
-}
-
-.welcome h1 { font-size: clamp(27px,5vw,38px); }
-
-.welcome p,
-.footnote { color: var(--muted); }
-
-.suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-}
-
-.message {
-  padding: 12px 15px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  border-radius: 14px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.message.user {
-  background: #292447;
-  align-self: flex-end;
-  max-width: 90%;
-}
-
-.message.assistant {
-  align-self: flex-start;
-  max-width: 95%;
-}
-
-.composer-area { padding: 12px; }
-
-.composer {
-  max-width: 760px;
-  margin: auto;
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 15px;
-  padding: 10px;
-}
-
-.composer textarea {
-  flex: 1;
-  min-width: 0;
-  max-height: 150px;
-  resize: none;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--text);
-  padding: 8px;
-}
-
-.send { background: var(--accent); color: white; }
-
-.footnote {
-  text-align: center;
-  font-size: 11px;
-  margin-top: 8px;
-}
-
-/* ===== FIREBASE EMAIL SIGN-IN WINDOW ===== */
-
-.auth-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: rgba(0,0,0,.72);
-  backdrop-filter: blur(8px);
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  overflow-y: auto;
-}
-
-.auth-overlay.open { display: flex; }
-
-.auth-card {
-  position: relative;
-  width: 100%;
-  max-width: 420px;
-  padding: 30px 24px;
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  background: var(--panel);
-  box-shadow: 0 24px 80px #0008;
-  animation: authAppear .2s ease-out;
-}
-
-@keyframes authAppear {
-  from { opacity: 0; transform: translateY(12px) scale(.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.auth-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  font-size: 22px;
-  padding: 0;
-}
-
-.auth-brand {
-  width: 58px;
-  height: 58px;
-  display: grid;
-  place-items: center;
-  margin: 0 auto 18px;
-  border-radius: 18px;
-  background: var(--accent);
-  color: white;
-  font-size: 28px;
-  font-weight: 800;
-}
-
-.auth-card h2 {
-  text-align: center;
-  font-size: 27px;
-  margin: 0 0 8px;
-}
-
-.auth-subtitle {
-  color: var(--muted);
-  text-align: center;
-  line-height: 1.5;
-  margin: 0 0 24px;
-}
-
-.auth-field { margin-bottom: 15px; }
-
-.auth-field label {
-  display: block;
-  font-size: 13px;
-  margin-bottom: 7px;
-  color: var(--text);
-}
-
-.auth-field input {
-  width: 100%;
-  padding: 13px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  outline: none;
-  background: var(--bg);
-  color: var(--text);
-}
-
-.auth-field input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent);
-}
-
-.auth-primary {
-  width: 100%;
-  padding: 13px;
-  margin-top: 5px;
-  background: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-weight: 700;
-}
-
-.auth-primary:disabled { opacity: .6; cursor: wait; }
-
-.auth-switch {
-  display: block;
-  width: 100%;
-  border: none;
-  background: transparent;
-  color: var(--accent);
-  margin-top: 16px;
-}
-
-.auth-message {
-  display: none;
-  margin-top: 14px;
-  padding: 11px;
-  border-radius: 10px;
-  font-size: 13px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-
-.auth-message.show { display: block; }
-.auth-message.error { background: #7f1d1d33; color: #fca5a5; }
-.auth-message.success { background: #16653433; color: #86efac; }
-
-.auth-terms {
-  text-align: center;
-  color: var(--muted);
-  font-size: 11px;
-  margin-top: 20px;
-  line-height: 1.5;
-}
-
-@media (max-width:700px) {
-  .sidebar {
-    position: fixed;
-    z-index: 10;
-    inset: 0 auto 0 0;
-    width: min(85vw,300px);
-    height: 100dvh;
-    overflow-y: auto;
-    transform: translateX(-105%);
-    transition: transform .2s ease;
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-    box-shadow: 0 0 0 100vmax #0008;
-  }
-
-  .close-sidebar { display: block; }
-  .menu-button { display: inline-block; }
-  .topbar { padding: 0 10px; }
-  .welcome { padding: 20px 3px; }
-  .auth-card { padding: 28px 20px; }
-}
-
-body.light {
-  --bg: #f6f7fb;
-  --panel: #ffffff;
-  --panel2: #edf0f6;
-  --text: #171923;
-  --muted: #626b7b;
-  --border: #dce1eb;
-}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
-
-<body>
-<div class="app">
-
-  <aside class="sidebar" id="sidebar">
-    <div class="brand">
-      <div class="logo">G</div>
-      <span>Gozie AI</span>
-      <button class="close-sidebar" id="closeSidebar"
-        aria-label="Close sidebar" title="Close sidebar">×</button>
+<body data-effective-theme="dark">
+<div class="app" id="app">
+  <header class="topbar" id="chatTopbar">
+    <div class="topbar-left">
+      <button class="icon-btn" id="menuButton" type="button" aria-label="Open chat menu" title="Open chat menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="brand">
+        <div class="brand-mark"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 2.1 7.1L25 12l-6.9 2.1L16 21l-2.1-6.9L7 12l6.9-1.9L16 3Z"/><path d="m25.5 18 .9 2.7 2.6.8-2.6.9-.9 2.6-.8-2.6-2.7-.9 2.7-.8.8-2.7Z"/><path d="M5 24.5a2.5 2.5 0 1 0 5 0 2.5 2.5 0 0 0-5 0Z"/></svg></div>
+        <div class="brand-name">GOZIE <span>AI</span></div>
+      </div>
     </div>
+    <div class="topbar-right">
+      <div class="model-wrap">
+        <button class="model-select" id="modelMenuButton" type="button" aria-expanded="false">
+          <svg class="model-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z"/><path d="m19 15 .9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15Z"/></svg>
+          <span id="headerModelName">SmolLM3 3B</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="model-menu" id="modelMenu">
+          <button type="button" id="chooseLocalModel"><span style="color:var(--accent)">✦</span><span><strong>SmolLM3 3B</strong><small>Local model · OpenAI-compatible</small></span></button>
+          <button type="button" id="manageModel"><span>⚙</span><span><strong>Model settings</strong><small>Configure your local server</small></span></button>
+        </div>
+      </div>
+      <span class="connection-dot" id="connectionDot" title="Connection not tested" aria-label="Model connection status"></span>
+      <button class="icon-btn" id="settingsButton" type="button" aria-label="Settings" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.5.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.5-.9l-1.7.6-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.8l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.5-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.5.9l1.7-.6 1.4 2.4-1.4 1.1a7 7 0 0 1 0 1.8Z" transform="translate(-1 -1) scale(1.08)"/></svg>
+      </button>
+    </div>
+  </header>
 
-    <button class="new-chat" id="newChat">＋ New chat</button>
-    <div class="section-label">Your conversations</div>
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="sidebar" id="sidebar" aria-label="Chat menu">
+    <div class="sidebar-head">
+      <div class="sidebar-brand">
+        <div class="brand-mark"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 2.1 7.1L25 12l-6.9 2.1L16 21l-2.1-6.9L7 12l6.9-1.9L16 3Z"/><path d="m25.5 18 .9 2.7 2.6.8-2.6.9-.9 2.6-.8-2.6-2.7-.9 2.7-.8.8-2.7Z"/><path d="M5 24.5a2.5 2.5 0 1 0 5 0 2.5 2.5 0 0 0-5 0Z"/></svg></div>
+        <div class="brand-name">GOZIE <span>AI</span></div>
+      </div>
+      <button class="icon-btn drawer-close" id="drawerClose" type="button" aria-label="Close menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    </div>
+    <button class="drawer-new" id="newChat" type="button"><span class="new-left"><span class="plus">＋</span><span>New chat</span></span><span class="shortcut">⌘ K</span></button>
+    <label class="history-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="historySearch" type="search" placeholder="Search chats" aria-label="Search chats" autocomplete="off"></label>
+    <div class="history-caption"><span>Your chats</span><span id="chatCount">0</span></div>
     <div class="history" id="history"></div>
-
-    <div class="settings">
-      <div>
-        <label for="theme">Appearance</label>
-        <select id="theme">
-          <option value="dark">Dark</option>
-          <option value="light">Light</option>
-        </select>
+    <div class="sidebar-footer">
+      <div class="storage-status"><i></i><span>Stored on this device</span></div>
+      <div class="footer-actions">
+        <button class="footer-action" id="drawerSettings" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.5.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.5-.9l-1.7.6-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.8l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.5-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.5.9l1.7-.6 1.4 2.4-1.4 1.1a7 7 0 0 1 0 1.8Z" transform="translate(-1 -1) scale(1.08)"/></svg><span>Settings</span></button>
+        <button class="icon-btn" id="moreButton" type="button" aria-label="More options" title="More options"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
       </div>
-
-      <div>
-        <label for="accent">Accent colour</label>
-        <input id="accent" type="color" value="#7c5cff">
-      </div>
-
-      <button id="signIn">Sign in</button>
-      <button id="clearHistory">Clear chat history</button>
+      <button class="footer-action" id="accountButton" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4.1 3.5-6 8-6s7.2 1.9 8 6"/></svg><span id="accountLabel">Email sign in</span></button>
     </div>
   </aside>
 
-  <main class="main">
-    <header class="topbar">
-      <div style="display:flex;align-items:center;gap:10px">
-        <button class="menu-button" id="menuButton">☰</button>
-        <strong id="chatTitle">New chat</strong>
-      </div>
-      <div class="top-actions">
-        <button id="themeButton">◐</button>
-        <button id="aboutButton">About</button>
-      </div>
-    </header>
-
-    <section class="messages" id="messages">
-      <div class="thread" id="thread">
-        <div class="welcome">
-          <h1>What can I help you with?</h1>
-          <p>Welcome to Gozie AI, your personal AI assistant.</p>
-          <div class="suggestions">
-            <button>Explain something simply</button>
-            <button>Help me write</button>
-            <button>Brainstorm ideas</button>
+  <main class="page chat-page active" id="chatPage">
+    <section class="messages" id="messages" aria-live="polite"><div class="thread" id="thread"></div></section>
+    <div class="composer-wrap">
+      <div class="composer-inner">
+        <form class="composer" id="composer">
+          <textarea id="prompt" rows="1" placeholder="Message GOZIE AI" aria-label="Message Gozie AI"></textarea>
+          <div class="composer-controls">
+            <div class="composer-tools">
+              <div class="web-toggle-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+                <span>Web Search</span>
+                <label class="switch" title="Toggle web search"><input id="webSearchToggle" type="checkbox" aria-label="Enable web search"><span></span></label>
+              </div>
+              <div class="current-model"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m12 2 1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z"/><path d="m19 15 .9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15Z"/></svg><span id="composerModelName">SmolLM3 3B</span></div>
+            </div>
+            <button class="send-btn" id="sendButton" type="submit" aria-label="Send message" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
           </div>
-        </div>
+        </form>
+        <div class="privacy-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3 4.5 6v5.5c0 4.3 3.2 7.9 7.5 9.5 4.3-1.6 7.5-5.2 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/></svg><span>Your chats stay in this browser. Only sent messages reach your configured model.</span></div>
+        <div class="status-message" id="statusMessage" aria-live="polite"></div>
       </div>
-    </section>
+    </div>
+  </main>
 
-    <div class="composer-area">
-      <form class="composer" id="composer">
-        <textarea id="prompt" rows="1"
-          placeholder="Message Gozie AI…"
-          aria-label="Message Gozie AI"></textarea>
-        <button class="send" type="submit">↑ Send</button>
-      </form>
-      <div class="footnote" id="status">
-        Preview mode · AI connection not yet configured
+  <main class="page settings-page" id="settingsPage">
+    <header class="topbar settings-topbar">
+      <div class="topbar-left">
+        <button class="icon-btn" id="settingsMenuButton" type="button" aria-label="Open chat menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+        <div class="brand"><div class="brand-mark"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 2.1 7.1L25 12l-6.9 2.1L16 21l-2.1-6.9L7 12l6.9-1.9L16 3Z"/><path d="m25.5 18 .9 2.7 2.6.8-2.6.9-.9 2.6-.8-2.6-2.7-.9 2.7-.8.8-2.7Z"/></svg></div><div class="brand-name">GOZIE <span>AI</span></div></div>
       </div>
+      <button class="icon-btn" id="backToChat" type="button" aria-label="Back to chat" title="Back to chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5m7-7-7 7 7 7"/></svg></button>
+    </header>
+    <div class="settings-content">
+      <p class="settings-eyebrow">MAKE IT YOURS</p>
+      <h1>Settings</h1>
+      <p class="settings-intro">Your preferences are saved on this browser. No account or cloud sync.</p>
+
+      <section class="setting-card">
+        <div class="setting-card-head">
+          <div class="setting-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg></div>
+          <div><h2>Appearance</h2><p>Choose a theme and your favorite accent.</p></div>
+        </div>
+        <label class="setting-label">Theme</label>
+        <div class="theme-options" role="group" aria-label="Choose theme">
+          <button class="theme-choice" type="button" data-theme-choice="light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg><span>Light</span><svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 4 4L19 6"/></svg></button>
+          <button class="theme-choice" type="button" data-theme-choice="dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z"/></svg><span>Dark</span><svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 4 4L19 6"/></svg></button>
+          <button class="theme-choice active" type="button" data-theme-choice="system"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></svg><span>System</span><svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 4 4L19 6"/></svg></button>
+        </div>
+        <label class="setting-label">Accent color</label>
+        <div class="accent-grid" id="accentGrid">
+          <button class="accent-choice" type="button" data-accent="#3b82f6"><i class="accent-dot" style="background:#3b82f6"></i><span>Blue</span><b class="accent-check">✓</b></button>
+          <button class="accent-choice" type="button" data-accent="#16a67a"><i class="accent-dot" style="background:#16a67a"></i><span>Green</span><b class="accent-check">✓</b></button>
+          <button class="accent-choice" type="button" data-accent="#e34f5f"><i class="accent-dot" style="background:#e34f5f"></i><span>Red</span><b class="accent-check">✓</b></button>
+          <button class="accent-choice" type="button" data-accent="#d6a323"><i class="accent-dot" style="background:#d6a323"></i><span>Gold</span><b class="accent-check">✓</b></button>
+          <button class="accent-choice" type="button" data-accent="#89919e"><i class="accent-dot" style="background:#89919e"></i><span>Silver</span><b class="accent-check">✓</b></button>
+          <button class="accent-choice" type="button" data-accent="#0ea5a4"><i class="accent-dot" style="background:#0ea5a4"></i><span>Teal</span><b class="accent-check">✓</b></button>
+          <button class="accent-choice active" type="button" data-accent="#ed8244"><i class="accent-dot" style="background:#ed8244"></i><span>Orange</span><b class="accent-check">✓</b></button>
+          <button class="accent-choice" type="button" data-accent="#e56aa8"><i class="accent-dot" style="background:#e56aa8"></i><span>Pink</span><b class="accent-check">✓</b></button>
+          <button class="accent-choice" type="button" data-accent="#655ad8"><i class="accent-dot" style="background:#655ad8"></i><span>Indigo</span><b class="accent-check">✓</b></button>
+          <button class="accent-choice" type="button" data-accent="#159c75"><i class="accent-dot" style="background:#159c75"></i><span>Emerald</span><b class="accent-check">✓</b></button>
+        </div>
+        <div class="setting-field" style="margin-top:22px;margin-bottom:0"><label for="customAccent">Custom accent color</label><input id="customAccent" type="color" value="#ed8244" style="width:100%;height:52px;padding:5px;border-radius:13px;background:var(--panel-2);border:1px solid var(--border)"></div>
+      </section>
+
+      <section class="setting-card" id="localModelCard">
+        <div class="setting-card-head">
+          <div class="setting-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z"/><path d="m19 15 .9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15Z"/></svg></div>
+          <div><h2>Local model</h2><p>Connect an OpenAI-compatible inference server.</p></div>
+        </div>
+        <div class="setting-field"><label for="modelBaseUrl">Server base URL</label><input id="modelBaseUrl" type="url" placeholder="http://127.0.0.1:8080/v1" value="http://127.0.0.1:8080/v1"><p class="setting-help">For a model running in Termux on this phone, use the local address above. Your server must allow requests from this website (CORS).</p></div>
+        <div class="setting-field"><label for="modelId">Model ID</label><input id="modelId" type="text" value="smollm3" placeholder="smollm3"><p class="setting-help">This is the model name sent to the inference server. The display name remains SmolLM3 3B.</p></div>
+        <div class="setting-field"><label for="modelApiKey">API key (optional)</label><input id="modelApiKey" type="password" autocomplete="off" placeholder="Leave blank if your local server does not require one"><p class="setting-help">Only enter a key if your local server requires it. It is saved in this browser on this device, not written into the public HTML source.</p></div>
+        <div class="model-actions"><button class="primary-action" id="testModelButton" type="button">Test connection</button><button class="secondary-action" id="saveModelButton" type="button">Save settings</button></div>
+        <div class="inline-status" id="modelTestStatus" aria-live="polite">Model connection has not been tested yet.</div>
+      </section>
+
+      <section class="setting-card">
+        <div class="setting-card-head">
+          <div class="setting-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+          <div><h2>Web search</h2><p>Optional search service for questions that need current information.</p></div>
+        </div>
+        <div class="setting-field"><label for="searchEndpoint">Search service endpoint</label><input id="searchEndpoint" type="url" placeholder="https://your-search-service.example/search"><p class="setting-help">Connect a search endpoint that accepts a POST request with a <code>query</code> field and returns JSON containing a <code>results</code> array. Leave blank until you have a search service configured. No API key is embedded in this page.</p></div>
+        <div class="inline-status" id="searchSettingsStatus">The Web Search switch in the message box is off by default.</div>
+      </section>
+
+      <section class="setting-card">
+        <div class="setting-card-head">
+          <div class="setting-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4.1 3.5-6 8-6s7.2 1.9 8 6"/></svg></div>
+          <div><h2>Account</h2><p>Sign in using your email address and password.</p></div>
+        </div>
+        <div class="account-row"><div class="account-copy"><strong id="settingsAccountTitle">Not signed in</strong><small id="settingsAccountEmail">Sign in or create an account to use your account.</small></div><button class="secondary-action" id="settingsAccountButton" type="button">Email sign in</button></div>
+      </section>
     </div>
   </main>
 </div>
 
-<!-- Firebase email sign-in interface -->
-<div class="auth-overlay" id="authOverlay"
-  role="dialog" aria-modal="true" aria-labelledby="authTitle">
+<div class="auth-overlay" id="authOverlay" role="dialog" aria-modal="true" aria-labelledby="authTitle">
   <section class="auth-card">
-    <button class="auth-close" id="authClose"
-      type="button" aria-label="Close sign-in">×</button>
-
+    <button class="icon-btn auth-close" id="authClose" type="button" aria-label="Close sign-in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
     <div class="auth-brand">G</div>
     <h2 id="authTitle">Welcome to Gozie AI</h2>
-    <p class="auth-subtitle" id="authSubtitle">
-      Sign in to your account to continue.
-    </p>
-
+    <p class="auth-subtitle" id="authSubtitle">Sign in with your email and password to continue.</p>
     <form id="authForm">
-      <div class="auth-field">
-        <label for="authEmail">Email address</label>
-        <input id="authEmail" type="email"
-          placeholder="you@example.com" autocomplete="email" required>
-      </div>
-
-      <div class="auth-field">
-        <label for="authPassword">Password</label>
-        <input id="authPassword" type="password"
-          placeholder="Enter your password" minlength="6"
-          autocomplete="current-password" required>
-      </div>
-
-      <button class="auth-primary" id="authSubmit" type="submit">
-        Sign in
-      </button>
+      <div class="auth-field"><label for="authEmail">Email address</label><input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email" required></div>
+      <div class="auth-field"><label for="authPassword">Password</label><input id="authPassword" type="password" placeholder="Enter your password" minlength="6" autocomplete="current-password" required></div>
+      <button class="auth-primary" id="authSubmit" type="submit">Sign in</button>
     </form>
-
-    <button class="auth-switch" id="authSwitch" type="button">
-      Don't have an account? Create one
-    </button>
-
+    <div class="auth-links"><button class="auth-link" id="authSwitch" type="button">Create an account</button><button class="auth-link" id="forgotPassword" type="button">Forgot password?</button></div>
     <div class="auth-message" id="authMessage" role="status"></div>
-
-    <div class="auth-terms">
-      Your sign-in is handled securely by Firebase Authentication.
-    </div>
+    <div class="auth-terms">Your account is securely managed by Firebase Authentication.</div>
   </section>
 </div>
 
 <script>
-const $ = id => document.getElementById(id);
+const $=id=>document.getElementById(id);
+function readStorage(key,fallback){try{const v=localStorage.getItem(key);return v===null?fallback:v}catch{return fallback}}
+function writeStorage(key,value){try{localStorage.setItem(key,value)}catch{}}
+function readJSON(key,fallback){try{return JSON.parse(readStorage(key,JSON.stringify(fallback)))}catch{return fallback}}
+const storageKey="gozie_chats_v1";
+let chats=readJSON(storageKey,[]);
+if(!Array.isArray(chats))chats=[];
+chats=chats.filter(c=>c&&c.id&&Array.isArray(c.messages));
+let currentId=chats[0]?.id||null;
+let busy=false;
+let themeChoice=readStorage("gozie_theme_v1","system");
+let accent=readStorage("gozie_accent_v1","#ed8244");
+let modelSettings=readJSON("gozie_model_settings_v1",{baseUrl:"http://127.0.0.1:8080/v1",model:"smollm3",apiKey:""});
+let searchSettings=readJSON("gozie_search_settings_v1",{endpoint:""});
+let modelState="unknown";
+let webSearchEnabled=false;
+let authUser=null;
 
-let chats = [];
-try {
-  chats = JSON.parse(localStorage.getItem("gozie_chats_v1") || "[]");
-  if (!Array.isArray(chats)) chats = [];
-} catch {
-  chats = [];
-}
+function hexToRgb(hex){const s=String(hex).replace("#","");const f=s.length===3?s.split("").map(c=>c+c).join(""):s;const n=parseInt(f,16);return `${(n>>16)&255},${(n>>8)&255},${n&255}`}
+function setAccent(color){if(!/^#[0-9a-f]{6}$/i.test(color))return;accent=color;document.documentElement.style.setProperty("--accent",color);document.documentElement.style.setProperty("--accent-rgb",hexToRgb(color));$("customAccent").value=color;document.querySelectorAll("[data-accent]").forEach(b=>b.classList.toggle("active",b.dataset.accent.toLowerCase()===color.toLowerCase()));writeStorage("gozie_accent_v1",color)}
+function applyTheme(){const systemLight=window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches;const effective=themeChoice==="system"?(systemLight?"light":"dark"):themeChoice;document.body.dataset.effectiveTheme=effective;document.querySelectorAll("[data-theme-choice]").forEach(b=>b.classList.toggle("active",b.dataset.themeChoice===themeChoice));$("themeColorMeta")?.setAttribute("content",effective==="light"?"#ffffff":"#202123")}
+function setTheme(choice){if(!["light","dark","system"].includes(choice))return;themeChoice=choice;writeStorage("gozie_theme_v1",choice);applyTheme()}
+function saveChats(){writeStorage(storageKey,JSON.stringify(chats));renderHistory()}
+function currentChat(){return chats.find(c=>c.id===currentId)||null}
+function closeDrawer(){$("sidebar").classList.remove("open");$("drawerBackdrop").classList.remove("show")}
+function openDrawer(){$("sidebar").classList.add("open");$("drawerBackdrop").classList.add("show");$("modelMenu").classList.remove("open")}
+function newChat(){const c={id:Date.now().toString(36)+Math.random().toString(36).slice(2),title:"New chat",messages:[],updated:Date.now()};chats.unshift(c);currentId=c.id;saveChats();renderChat();closeDrawer();showPage("chat");$("prompt").focus()}
+function renderHistory(){const root=$("history");const q=$("historySearch").value.trim().toLowerCase();root.innerHTML="";const filtered=[...chats].sort((a,b)=>(b.updated||0)-(a.updated||0)).filter(c=>String(c.title||"New chat").toLowerCase().includes(q));$("chatCount").textContent=chats.length;if(!filtered.length){const empty=document.createElement("div");empty.className="history-empty";empty.textContent=q?"No matching chats":"Your conversations will appear here";root.appendChild(empty);return}filtered.forEach(c=>{const b=document.createElement("button");b.type="button";b.className="history-item"+(c.id===currentId?" active":"");const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.setAttribute("viewBox","0 0 24 24");svg.setAttribute("fill","none");svg.setAttribute("stroke","currentColor");svg.setAttribute("stroke-width","1.7");svg.innerHTML='<path d="M5 5.5A2.5 2.5 0 0 1 7.5 3h10A2.5 2.5 0 0 1 20 5.5v10a2.5 2.5 0 0 1-2.5 2.5H9l-5 3v-15.5A2.5 2.5 0 0 1 6.5 3"/>';const label=document.createElement("span");label.textContent=c.title||"New chat";b.append(svg,label);b.addEventListener("click",()=>{currentId=c.id;renderChat();closeDrawer();showPage("chat")});root.appendChild(b)})}
+function addMessage(role,content){const c=currentChat();if(!c)return;c.messages.push({role,content,time:Date.now()});c.updated=Date.now();if(c.title==="New chat"&&role==="user"){c.title=content.slice(0,42)+(content.length>42?"…":"")}saveChats();renderChat()}
+function welcomeElement(){const w=document.createElement("div");w.className="welcome";w.innerHTML=`
+  <div class="welcome-logo"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 2.1 7.1L25 12l-6.9 2.1L16 21l-2.1-6.9L7 12l6.9-1.9L16 3Z"/><path d="m25.5 18 .9 2.7 2.6.8-2.6.9-.9 2.6-.8-2.6-2.7-.9 2.7-.8.8-2.7Z"/><path d="M5 24.5a2.5 2.5 0 1 0 5 0 2.5 2.5 0 0 0-5 0Z"/></svg></div>
+  <div class="eyebrow">A LITTLE MORE YOU</div>
+  <h1>What's on your mind?</h1>
+  <p>A thoughtful chat companion, on your terms. Connect a local model when you're ready.</p>
+  <div class="suggestions">
+    <button class="suggestion" type="button" data-prompt="Help me see this problem from another angle"><strong>A fresh perspective</strong><small>Help me see this problem from another angle</small><span class="arrow">↗</span></button>
+    <button class="suggestion" type="button" data-prompt="Help me turn an idea into a simple plan"><strong>Make a plan</strong><small>Help me turn an idea into a simple plan</small><span class="arrow">↗</span></button>
+    <button class="suggestion" type="button" data-prompt="Explain something interesting in a simple way"><strong>Get curious</strong><small>Explain something interesting in a simple way</small><span class="arrow">↗</span></button>
+  </div>`;w.querySelectorAll("[data-prompt]").forEach(b=>b.addEventListener("click",()=>{$("prompt").value=b.dataset.prompt;resizePrompt();$("prompt").focus()}));return w}
+function renderChat(){const c=currentChat();const thread=$("thread");thread.innerHTML="";if(!c||!c.messages.length){thread.appendChild(welcomeElement())}else{c.messages.forEach(m=>{const row=document.createElement("div");row.className="message-row "+(m.role==="user"?"user":"assistant");if(m.role!=="user"){const avatar=document.createElement("div");avatar.className="message-avatar";avatar.textContent="✦";row.appendChild(avatar)}const content=document.createElement("div");content.className="message-content";const meta=document.createElement("div");meta.className="message-meta";meta.textContent=m.role==="user"?"You":"GOZIE AI";const bubble=document.createElement("div");bubble.className="message-bubble";bubble.textContent=m.content;content.append(meta,bubble);row.appendChild(content);thread.appendChild(row)})}renderHistory();requestAnimationFrame(()=>{$("messages").scrollTop=$("messages").scrollHeight})}
+function resizePrompt(){const p=$("prompt");p.style.height="auto";p.style.height=Math.min(p.scrollHeight,140)+"px";$("sendButton").disabled=!p.value.trim()||busy}
+function showPage(page){const chat=page==="chat";$("chatPage").classList.toggle("active",chat);$("settingsPage").classList.toggle("active",!chat);$("modelMenu").classList.remove("open");closeDrawer();if(!chat)populateSettings();else setTimeout(()=>$("prompt").focus(),80)}
+function updateModelLabels(){$("headerModelName").textContent="SmolLM3 3B";$("composerModelName").textContent="SmolLM3 3B"}
+function updateConnection(state){modelState=state;const d=$("connectionDot");d.classList.toggle("online",state==="online");d.classList.toggle("offline",state==="offline");d.title=state==="online"?"Local model connected":state==="offline"?"Local model unavailable":"Connection not tested"}
+function getModelSettings(){return{baseUrl:String(modelSettings.baseUrl||"http://127.0.0.1:8080/v1").trim().replace(/\/+$/, ""),model:String(modelSettings.model||"smollm3").trim()||"smollm3",apiKey:String(modelSettings.apiKey||"").trim()}}
+function getSearchEndpoint(){return String(searchSettings.endpoint||"").trim()}
+function populateSettings(){$("modelBaseUrl").value=modelSettings.baseUrl||"http://127.0.0.1:8080/v1";$("modelId").value=modelSettings.model||"smollm3";$("modelApiKey").value=modelSettings.apiKey||"";$("searchEndpoint").value=searchSettings.endpoint||"";$ ("modelTestStatus").textContent=modelState==="online"?"The local model was connected successfully.":modelState==="offline"?"The last connection test failed. Check that your local server is running.":"Model connection has not been tested yet.";$ ("modelTestStatus").className="inline-status";$("searchSettingsStatus").textContent=searchSettings.endpoint?"A search endpoint is saved on this device.":"No search endpoint is configured yet. Web Search will show a reminder until one is added.";updateAccountSettings()}
+function saveModelSettings(){modelSettings={baseUrl:$("modelBaseUrl").value.trim()||"http://127.0.0.1:8080/v1",model:$("modelId").value.trim()||"smollm3",apiKey:$("modelApiKey").value.trim()};writeStorage("gozie_model_settings_v1",JSON.stringify(modelSettings));updateModelLabels();$("modelTestStatus").textContent="Model settings saved on this device.";$("modelTestStatus").className="inline-status good";updateConnection("unknown")}
+async function testModelConnection(){saveModelSettings();const s=getModelSettings();const status=$("modelTestStatus");status.className="inline-status";status.textContent="Testing local model connection…";$("testModelButton").disabled=true;try{const headers={"Accept":"application/json"};if(s.apiKey)headers.Authorization="Bearer "+s.apiKey;const r=await fetch(s.baseUrl+"/models",{method:"GET",headers});if(!r.ok)throw new Error("Server returned HTTP "+r.status);const data=await r.json();updateConnection("online");status.className="inline-status good";const names=Array.isArray(data.data)?data.data.map(x=>x.id).filter(Boolean):[];status.textContent=names.length?"Connected. Available model(s): "+names.slice(0,3).join(", "):"Connected to your local inference server."}catch(e){updateConnection("offline");status.className="inline-status bad";status.textContent="Could not connect: "+(e.message||"Check the server address, that Termux is running, and that CORS allows this website.")}finally{$("testModelButton").disabled=false}}
+async function runWebSearch(query){const endpoint=getSearchEndpoint();if(!endpoint)throw new Error("Web Search is switched on, but no search endpoint is configured. Add one in Settings, or switch Web Search off.");const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({query})});if(!response.ok)throw new Error("Search service returned HTTP "+response.status);const data=await response.json();const results=Array.isArray(data.results)?data.results:[];return results.slice(0,6).map((r,i)=>`${i+1}. ${r.title||r.name||"Search result"}\n${r.snippet||r.description||""}\n${r.url||r.link||""}`).join("\n\n")}
+function setStatus(text){$("statusMessage").textContent=text||""}
+async function sendMessage(){if(busy)return;const text=$("prompt").value.trim();if(!text)return;if(!currentId){const c={id:Date.now().toString(36)+Math.random().toString(36).slice(2),title:"New chat",messages:[],updated:Date.now()};chats.unshift(c);currentId=c.id}$("prompt").value="";resizePrompt();setStatus("");addMessage("user",text);busy=true;$("sendButton").disabled=true;const typingRow=document.createElement("div");typingRow.className="message-row assistant";typingRow.id="typingIndicator";const avatar=document.createElement("div");avatar.className="message-avatar";avatar.textContent="✦";const body=document.createElement("div");body.className="message-content";const meta=document.createElement("div");meta.className="message-meta";meta.textContent="GOZIE AI";const bubble=document.createElement("div");bubble.className="message-bubble";bubble.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';body.append(meta,bubble);typingRow.append(avatar,body);$("thread").appendChild(typingRow);$("messages").scrollTop=$("messages").scrollHeight;try{const s=getModelSettings();let searchContext="";if(webSearchEnabled){setStatus("Searching for relevant information…");searchContext=await runWebSearch(text)}setStatus("Generating a response…");const messages=[];if(searchContext)messages.push({role:"system",content:"Use the following web search results as source material. Make clear when information comes from these results and do not invent unsupported facts.\n\n"+searchContext});const c=currentChat();for(const m of (c?.messages||[]).slice(-24)){if(m.role==="user"||m.role==="assistant")messages.push({role:m.role,content:m.content})}const response=await fetch(s.baseUrl+"/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json",...(s.apiKey?{Authorization:"Bearer "+s.apiKey}:{})},body:JSON.stringify({model:s.model,messages,temperature:0.7,stream:false,reasoning_effort:"none"})});if(!response.ok){let detail="";try{detail=(await response.text()).slice(0,450)}catch{}throw new Error("Model server returned HTTP "+response.status+(detail?": "+detail:""))}const data=await response.json();const answer=data.choices?.[0]?.message?.content??data.choices?.[0]?.text;if(typeof answer!=="string"||!answer.trim())throw new Error("The model server responded, but no answer text was returned.");$("typingIndicator")?.remove();addMessage("assistant",answer.trim());updateConnection("online");setStatus("")}catch(e){$("typingIndicator")?.remove();const msg="I couldn't get a response from the configured service.\n\n"+(e.message||"Please check your settings and try again.");addMessage("assistant",msg);if(String(e.message||"").toLowerCase().includes("fetch")||String(e.message||"").includes("HTTP"))updateConnection("offline");setStatus("Check Settings if the connection problem continues.")}finally{busy=false;resizePrompt();$("messages").scrollTop=$("messages").scrollHeight}}
 
-let currentId = null;
+/* Drawer and navigation */
+$("menuButton").addEventListener("click",openDrawer);$("settingsMenuButton").addEventListener("click",openDrawer);$("drawerClose").addEventListener("click",closeDrawer);$("drawerBackdrop").addEventListener("click",closeDrawer);$("newChat").addEventListener("click",newChat);$("historySearch").addEventListener("input",renderHistory);$("drawerSettings").addEventListener("click",()=>showPage("settings"));$("settingsButton").addEventListener("click",()=>showPage("settings"));$("backToChat").addEventListener("click",()=>showPage("chat"));$("moreButton").addEventListener("click",()=>{if(confirm("Clear all chat history stored on this device?")){chats=[];currentId=null;saveChats();renderChat();closeDrawer()}});
+$("modelMenuButton").addEventListener("click",()=>{$("modelMenu").classList.toggle("open");$("modelMenuButton").setAttribute("aria-expanded",$("modelMenu").classList.contains("open")?"true":"false")});$("chooseLocalModel").addEventListener("click",()=>{$("modelMenu").classList.remove("open");showPage("settings")});$("manageModel").addEventListener("click",()=>showPage("settings"));document.addEventListener("click",e=>{if(!e.target.closest(".model-wrap"))$("modelMenu").classList.remove("open")});
+$("composer").addEventListener("submit",e=>{e.preventDefault();sendMessage()});$("prompt").addEventListener("input",resizePrompt);$("prompt").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();$("composer").requestSubmit()}});$("webSearchToggle").addEventListener("change",e=>{webSearchEnabled=e.target.checked;setStatus(webSearchEnabled&&!getSearchEndpoint()?"Add a search endpoint in Settings to use Web Search.":"")});
 
-function save() {
-  try {
-    localStorage.setItem("gozie_chats_v1", JSON.stringify(chats));
-  } catch {}
-  renderHistory();
-}
+/* Appearance controls */
+document.querySelectorAll("[data-theme-choice]").forEach(b=>b.addEventListener("click",()=>setTheme(b.dataset.themeChoice)));document.querySelectorAll("[data-accent]").forEach(b=>b.addEventListener("click",()=>setAccent(b.dataset.accent)));$("customAccent").addEventListener("input",e=>setAccent(e.target.value));if(window.matchMedia){window.matchMedia("(prefers-color-scheme: light)").addEventListener?.("change",()=>{if(themeChoice==="system")applyTheme()})}
 
-function currentChat() {
-  return chats.find(chat => chat.id === currentId);
-}
+/* Model and search settings */
+$("saveModelButton").addEventListener("click",saveModelSettings);$("testModelButton").addEventListener("click",testModelConnection);$("searchEndpoint").addEventListener("change",()=>{searchSettings={endpoint:$("searchEndpoint").value.trim()};writeStorage("gozie_search_settings_v1",JSON.stringify(searchSettings));$("searchSettingsStatus").textContent=searchSettings.endpoint?"Search endpoint saved on this device.":"No search endpoint is configured yet."});
 
-function closeSidebar() {
-  $("sidebar").classList.remove("open");
-}
+/* Clear chat history action */
+function clearChats(){if(confirm("Delete all conversations saved on this device? This cannot be undone.")){chats=[];currentId=null;saveChats();renderChat();closeDrawer()}}
+/* Keyboard shortcuts and modal close */
+document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();newChat()}if(e.key==="Escape"){closeDrawer();$("modelMenu").classList.remove("open");closeAuth()}});
 
-function newChat() {
-  const chat = {
-    id: Date.now().toString() + Math.random().toString(16).slice(2),
-    title: "New chat",
-    messages: [],
-    updated: Date.now()
-  };
+/* Account display helpers used by both the drawer and settings page */
+function updateAccountSettings(){if(authUser){$("settingsAccountTitle").textContent="Signed in";$("settingsAccountEmail").textContent=authUser.email||"Your Gozie AI account";$("settingsAccountButton").textContent="Sign out";$("accountLabel").textContent=authUser.email||"Account"}else{$("settingsAccountTitle").textContent="Not signed in";$("settingsAccountEmail").textContent="Sign in or create an account to use your account.";$("settingsAccountButton").textContent="Email sign in";$("accountLabel").textContent="Email sign in"}}
+function openAuth(){closeDrawer();$("authOverlay").classList.add("open");setTimeout(()=>$("authEmail").focus(),80)}function closeAuth(){$("authOverlay").classList.remove("open")}
+function accountAction(){if(authUser){if(confirm("You are signed in as "+authUser.email+".\n\nPress OK to sign out, or Cancel to stay signed in.")){window.gozieSignOut?.()}}else openAuth()}
+$("accountButton").addEventListener("click",accountAction);$("settingsAccountButton").addEventListener("click",accountAction);$("authClose").addEventListener("click",closeAuth);$("authOverlay").addEventListener("click",e=>{if(e.target===$("authOverlay"))closeAuth()});
 
-  chats.unshift(chat);
-  currentId = chat.id;
-  save();
-  renderChat();
-  closeSidebar();
-  $("prompt").focus();
-}
-
-function renderHistory() {
-  const root = $("history");
-  root.innerHTML = "";
-
-  [...chats].sort((a,b) => b.updated-a.updated).forEach(chat => {
-    const button = document.createElement("button");
-    button.textContent = chat.title || "New chat";
-    button.className = chat.id === currentId ? "active" : "";
-    button.onclick = () => {
-      currentId = chat.id;
-      renderChat();
-      closeSidebar();
-    };
-    root.appendChild(button);
-  });
-}
-
-function addMessage(role, content) {
-  const chat = currentChat();
-  if (!chat) return;
-
-  chat.messages.push({role, content});
-  chat.updated = Date.now();
-
-  if (chat.title === "New chat" && role === "user") {
-    chat.title = content.slice(0,35) + (content.length > 35 ? "…" : "");
-  }
-
-  save();
-  renderChat();
-}
-
-function renderChat() {
-  const chat = currentChat();
-  const thread = $("thread");
-
-  $("chatTitle").textContent = chat ? chat.title : "New chat";
-  thread.innerHTML = "";
-
-  if (!chat || chat.messages.length === 0) {
-    const welcome = document.createElement("div");
-    welcome.className = "welcome";
-
-    const heading = document.createElement("h1");
-    heading.textContent = "What can I help you with?";
-
-    const description = document.createElement("p");
-    description.textContent =
-      "Welcome to Gozie AI, your personal AI assistant.";
-
-    const suggestions = document.createElement("div");
-    suggestions.className = "suggestions";
-
-    [
-      "Explain something simply",
-      "Help me write",
-      "Brainstorm ideas"
-    ].forEach(text => {
-      const button = document.createElement("button");
-      button.textContent = text;
-      button.onclick = () => {
-        $("prompt").value = text;
-        $("prompt").focus();
-      };
-      suggestions.appendChild(button);
-    });
-
-    welcome.append(heading,description,suggestions);
-    thread.appendChild(welcome);
-  } else {
-    chat.messages.forEach(message => {
-      const bubble = document.createElement("div");
-      bubble.className =
-        "message " + (message.role === "user" ? "user" : "assistant");
-      bubble.textContent = message.content;
-      thread.appendChild(bubble);
-    });
-  }
-
-  $("messages").scrollTop = $("messages").scrollHeight;
-  renderHistory();
-}
-
-/* Sidebar controls */
-$("menuButton").onclick = () => {
-  $("sidebar").classList.toggle("open");
-};
-
-$("closeSidebar").onclick = closeSidebar;
-$("newChat").onclick = newChat;
-
-/* Chat form: placeholder responses until AI is connected */
-$("composer").addEventListener("submit", event => {
-  event.preventDefault();
-
-  const text = $("prompt").value.trim();
-  if (!text) return;
-
-  if (!currentId) newChat();
-
-  $("prompt").value = "";
-  addMessage("user",text);
-
-  addMessage(
-    "assistant",
-    "Gozie AI is not connected to the real AI model yet. " +
-    "This is a preview. The next step is connecting " +
-    "your SmolLM3 service securely."
-  );
-
-  $("status").textContent =
-    "Preview mode · real AI connection is not configured";
-});
-
-$("prompt").addEventListener("keydown", event => {
-  if (event.key === "Enter" && !event.shiftKey) {
-    event.preventDefault();
-    $("composer").requestSubmit();
-  }
-});
-
-$("prompt").addEventListener("input", () => {
-  const input = $("prompt");
-  input.style.height = "auto";
-  input.style.height = Math.min(input.scrollHeight,150) + "px";
-});
-
-/* Theme settings */
-function setTheme(theme) {
-  document.body.classList.toggle("light",theme === "light");
-  $("theme").value = theme;
-  localStorage.setItem("gozie_theme_v1",theme);
-}
-
-$("theme").onchange = () => setTheme($("theme").value);
-
-$("themeButton").onclick = () => {
-  setTheme(document.body.classList.contains("light") ? "dark" : "light");
-};
-
-$("accent").oninput = () => {
-  document.documentElement.style.setProperty("--accent",$("accent").value);
-  localStorage.setItem("gozie_accent_v1",$("accent").value);
-};
-
-/* Other controls */
-$("clearHistory").onclick = () => {
-  if (confirm("Delete all conversations saved on this device?")) {
-    chats = [];
-    currentId = null;
-    save();
-    renderChat();
-  }
-};
-
-/* Firebase sign-in opens the proper interface */
-$("signIn").onclick = () => {
-  if (window.gozieOpenAuth) {
-    window.gozieOpenAuth();
-  } else {
-    $("authOverlay").classList.add("open");
-  }
-};
-
-$("aboutButton").onclick = () => {
-  alert(
-    "Gozie AI interface prototype. " +
-    "Real AI responses are not connected yet."
-  );
-};
-
-/* Restore saved preferences and conversations */
-setTheme(localStorage.getItem("gozie_theme_v1") || "dark");
-
-const savedAccent =
-  localStorage.getItem("gozie_accent_v1") || "#7c5cff";
-
-$("accent").value = savedAccent;
-document.documentElement.style.setProperty("--accent",savedAccent);
-
-if (chats.length > 0) currentId = chats[0].id;
-renderChat();
-
-/* Sign-in window controls */
-$("authClose").onclick = () => $("authOverlay").classList.remove("open");
-
-$("authOverlay").addEventListener("click",event => {
-  if (event.target === $("authOverlay")) {
-    $("authOverlay").classList.remove("open");
-  }
-});
-
-document.addEventListener("keydown",event => {
-  if (event.key === "Escape") {
-    $("authOverlay").classList.remove("open");
-  }
-});
+/* Restore the app's preferences, saved chats and local model settings */
+setTheme(themeChoice);setAccent(accent);updateModelLabels();$("customAccent").value=accent;renderChat();renderHistory();resizePrompt();populateSettings();
 </script>
 
 <script type="module">
-import {initializeApp}
-  from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
 
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
-
-/* Your existing Firebase project configuration */
-const firebaseConfig = {
-  apiKey: "AIzaSyBlJI8EOB4RiT0h8W8cfEFW0g0vpNWHKzY",
-  authDomain: "gozie-ai2.firebaseapp.com",
-  projectId: "gozie-ai2",
-  storageBucket: "gozie-ai2.firebasestorage.app",
-  messagingSenderId: "721332592612",
-  appId: "1:721332592612:web:42ef393991bda492ffb1f1"
+/* Your existing Firebase project configuration — unchanged. Email/password only. */
+const firebaseConfig={
+  apiKey:"AIzaSyBlJI8EOB4RiT0h8W8cfEFW0g0vpNWHKzY",
+  authDomain:"gozie-ai2.firebaseapp.com",
+  projectId:"gozie-ai2",
+  storageBucket:"gozie-ai2.firebasestorage.app",
+  messagingSenderId:"721332592612",
+  appId:"1:721332592612:web:42ef393991bda492ffb1f1"
 };
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-const overlay = document.getElementById("authOverlay");
-const signInButton = document.getElementById("signIn");
-const authForm = document.getElementById("authForm");
-const emailInput = document.getElementById("authEmail");
-const passwordInput = document.getElementById("authPassword");
-const submitButton = document.getElementById("authSubmit");
-const switchButton = document.getElementById("authSwitch");
-const title = document.getElementById("authTitle");
-const subtitle = document.getElementById("authSubtitle");
-const message = document.getElementById("authMessage");
-
-let createAccountMode = false;
-let busy = false;
-
-function showMessage(text,type="error") {
-  message.textContent = text;
-  message.className = "auth-message show " + type;
-}
-
-function clearMessage() {
-  message.textContent = "";
-  message.className = "auth-message";
-}
-
-function updateMode() {
-  title.textContent = createAccountMode
-    ? "Create your account"
-    : "Welcome to Gozie AI";
-
-  subtitle.textContent = createAccountMode
-    ? "Create an account to get started."
-    : "Sign in to your account to continue.";
-
-  submitButton.textContent = createAccountMode
-    ? "Create account"
-    : "Sign in";
-
-  switchButton.textContent = createAccountMode
-    ? "Already have an account? Sign in"
-    : "Don't have an account? Create one";
-
-  passwordInput.autocomplete = createAccountMode
-    ? "new-password"
-    : "current-password";
-
-  clearMessage();
-}
-
-function openAuth() {
-  overlay.classList.add("open");
-  updateMode();
-  setTimeout(() => emailInput.focus(),100);
-}
-
-window.gozieOpenAuth = openAuth;
-
-signInButton.onclick = () => {
-  if (auth.currentUser) {
-    openAuth();
-    showMessage(
-      "You are signed in as " + auth.currentUser.email + ".",
-      "success"
-    );
-  } else {
-    openAuth();
-  }
-};
-
-switchButton.onclick = () => {
-  createAccountMode = !createAccountMode;
-  updateMode();
-};
-
-function setBusy(value) {
-  busy = value;
-  submitButton.disabled = value;
-  switchButton.disabled = value;
-  submitButton.textContent = value
-    ? "Please wait…"
-    : createAccountMode ? "Create account" : "Sign in";
-}
-
-function friendlyError(error) {
-  const errors = {
-    "auth/invalid-email": "Please enter a valid email address.",
-    "auth/missing-password": "Please enter your password.",
-    "auth/weak-password": "Your password must contain at least 6 characters.",
-    "auth/email-already-in-use": "An account with this email already exists. Try signing in.",
-    "auth/invalid-credential": "The email or password is incorrect. Please check and try again.",
-    "auth/user-not-found": "No account was found with this email. You may need to create one.",
-    "auth/wrong-password": "Incorrect password. Please try again.",
-    "auth/network-request-failed": "Network error. Check your internet connection and try again.",
-    "auth/operation-not-allowed": "Email/password sign-in is disabled. Enable it in Firebase Authentication settings.",
-    "auth/too-many-requests": "Too many attempts. Please wait and try again.",
-    "auth/email-already-exists": "This email address is already registered.",
-    "auth/user-disabled": "This account has been disabled. Please contact support."
-  };
-
-  return errors[error.code] ||
-    "Sign-in failed: " + (error.message || "Please try again.");
-}
-
-/* Email registration and login */
-authForm.addEventListener("submit",async event => {
-  event.preventDefault();
-  if (busy) return;
-
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-
-  if (!email || !password) {
-    showMessage("Please enter your email address and password.");
-    return;
-  }
-
-  clearMessage();
-  setBusy(true);
-
-  try {
-    if (createAccountMode) {
-      await createUserWithEmailAndPassword(auth,email,password);
-      showMessage("Your account has been created successfully.","success");
-    } else {
-      await signInWithEmailAndPassword(auth,email,password);
-      showMessage("You have signed in successfully.","success");
-    }
-
-    setTimeout(() => overlay.classList.remove("open"),900);
-  } catch(error) {
-    console.error("Gozie AI email authentication error:",error);
-    showMessage(friendlyError(error));
-  } finally {
-    setBusy(false);
-  }
-});
-
-/* Monitor authentication state and handle sign-out */
-onAuthStateChanged(auth,user => {
-  if (user) {
-    signInButton.textContent = user.email || "Account";
-    signInButton.title = "Signed in. Click to view account options.";
-
-    signInButton.onclick = async () => {
-      const shouldSignOut = confirm(
-        "You are signed in as " +
-        user.email +
-        ".\n\nPress OK to sign out, or Cancel to keep using Gozie AI."
-      );
-
-      if (shouldSignOut) {
-        try {
-          await signOut(auth);
-        } catch(error) {
-          console.error("Gozie AI sign-out error:",error);
-          openAuth();
-          showMessage(friendlyError(error));
-        }
-      }
-    };
-  } else {
-    signInButton.textContent = "Sign in";
-    signInButton.title = "Sign in to Gozie AI";
-    signInButton.onclick = openAuth;
-  }
-});
+const app=initializeApp(firebaseConfig);const auth=getAuth(app);const $=id=>document.getElementById(id);
+const form=$("authForm"),email=$("authEmail"),password=$("authPassword"),submit=$("authSubmit"),switcher=$("authSwitch"),forgot=$("forgotPassword"),title=$("authTitle"),subtitle=$("authSubtitle"),message=$("authMessage");
+let createMode=false,busy=false;
+function showMessage(text,type="error"){message.textContent=text;message.className="auth-message show "+type}
+function clearMessage(){message.textContent="";message.className="auth-message"}
+function updateMode(){title.textContent=createMode?"Create your account":"Welcome to Gozie AI";subtitle.textContent=createMode?"Create an account with your email address.":"Sign in with your email and password to continue.";submit.textContent=createMode?"Create account":"Sign in";switcher.textContent=createMode?"Already have an account? Sign in":"Create an account";forgot.style.display=createMode?"none":"inline-block";password.autocomplete=createMode?"new-password":"current-password";clearMessage()}
+function setBusy(value){busy=value;submit.disabled=value;switcher.disabled=value;forgot.disabled=value;submit.textContent=value?"Please wait…":createMode?"Create account":"Sign in"}
+function friendlyError(error){const map={"auth/invalid-email":"Please enter a valid email address.","auth/missing-password":"Please enter your password.","auth/weak-password":"Your password must contain at least 6 characters.","auth/email-already-in-use":"An account with this email already exists. Try signing in instead.","auth/invalid-credential":"The email or password is incorrect. Check your details and try again.","auth/user-not-found":"No account was found with this email. You may need to create one.","auth/wrong-password":"Incorrect password. Please try again.","auth/network-request-failed":"Network error. Check your internet connection and try again.","auth/operation-not-allowed":"Email/password sign-in is disabled. Enable Email/Password in Firebase Authentication settings.","auth/too-many-requests":"Too many attempts. Please wait a while and try again.","auth/user-disabled":"This account has been disabled. Please contact support."};return map[error.code]||"Authentication failed: "+(error.message||"Please try again.")}
+switcher.addEventListener("click",()=>{if(busy)return;createMode=!createMode;updateMode()});
+form.addEventListener("submit",async e=>{e.preventDefault();if(busy)return;const mail=email.value.trim(),pass=password.value;if(!mail||!pass){showMessage("Enter your email address and password to continue.");return}clearMessage();setBusy(true);try{if(createMode){await createUserWithEmailAndPassword(auth,mail,pass);showMessage("Your Gozie AI account has been created successfully.","success")}else{await signInWithEmailAndPassword(auth,mail,pass);showMessage("You have signed in successfully.","success")}setTimeout(()=>$("authOverlay").classList.remove("open"),850)}catch(err){console.error("Gozie AI email authentication error:",err);showMessage(friendlyError(err))}finally{setBusy(false)}});
+forgot.addEventListener("click",async()=>{if(busy)return;const mail=email.value.trim();if(!mail){showMessage("Enter your email address first, then select Forgot password again.");email.focus();return}clearMessage();setBusy(true);try{await sendPasswordResetEmail(auth,mail);showMessage("Password reset instructions have been sent to "+mail+". Check your inbox and spam folder.","success")}catch(err){console.error("Gozie AI password reset error:",err);showMessage(friendlyError(err))}finally{setBusy(false)}});
+window.gozieAuthUser=null;window.gozieSignOut=async()=>{try{await signOut(auth)}catch(err){console.error("Gozie AI sign-out error:",err);showMessage(friendlyError(err));$("authOverlay").classList.add("open")}};
+onAuthStateChanged(auth,user=>{window.gozieAuthUser=user||null;/* Notify the classic app script that auth state changed. */document.dispatchEvent(new CustomEvent("gozie-auth-change",{detail:{user:user||null}}))});
 </script>
-
 <script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load",() => {
-    navigator.serviceWorker.register("./sw.js")
-      .catch(error => console.error(
-        "Gozie AI service worker error:",error
-      ));
-  });
-}
+document.addEventListener("gozie-auth-change",event=>{authUser=event.detail.user||null;updateAccountSettings()});
+if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("./sw.js").catch(error=>console.error("Gozie AI service worker error:",error))})}
 </script>
-
 </body>
 </html>
