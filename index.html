@@ -931,9 +931,22 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     if(!email||!password){authMessage('Please enter your email address and password.');return;}
     const submit=$('authSubmit'); submit.disabled=true; submit.textContent='Please wait…'; clearAuthMessage();
     try {
-      if(createAccountMode) { await firebaseCreateUser(auth,email,password); authMessage('Your account has been created successfully.','success'); }
-      else { await firebaseEmailSignIn(auth,email,password); authMessage('You have signed in successfully.','success'); }
-      setTimeout(closeAuth,800);
+      if(createAccountMode) {
+        const credential = await firebaseCreateUser(auth,email,password);
+        await firebaseSendEmailVerification(credential.user);
+        await firebaseSignOut(auth);
+        authMessage('Account created. We sent a verification link to '+email+'. Open that email and click the verification link before signing in. Check your spam folder if you do not see it.','success');
+      } else {
+        const credential = await firebaseEmailSignIn(auth,email,password);
+        if(!credential.user.emailVerified) {
+          await firebaseSendEmailVerification(credential.user);
+          await firebaseSignOut(auth);
+          authMessage('Your email is not verified yet. We sent a new verification link to '+email+'. Open it, verify your email, then sign in again.');
+          return;
+        }
+        authMessage('You have signed in successfully.','success');
+        setTimeout(closeAuth,800);
+      }
     } catch(error) { console.error('Gozie AI email authentication error:',error); authMessage(friendlyAuthError(error)); }
     finally { submit.disabled=false; submit.textContent=createAccountMode?'Create account':'Sign in'; }
   });
@@ -957,7 +970,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     messagingSenderId: '721332592612',
     appId: '1:721332592612:web:42ef393991bda492ffb1f1'
   };
-  let firebaseCreateUser, firebaseEmailSignIn, firebaseSignOut, firebaseSendPasswordResetEmail;
+  let firebaseCreateUser, firebaseEmailSignIn, firebaseSignOut, firebaseSendPasswordResetEmail, firebaseSendEmailVerification;
   (async()=>{
     try {
       const [appSdk,authSdk,dbSdk]=await Promise.all([
@@ -972,6 +985,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       firebaseEmailSignIn=authSdk.signInWithEmailAndPassword;
       firebaseSignOut=authSdk.signOut;
       firebaseSendPasswordResetEmail=authSdk.sendPasswordResetEmail;
+      firebaseSendEmailVerification=authSdk.sendEmailVerification;
       authSdk.onAuthStateChanged(auth, async user=>{
         const previousUid=activeCloudUid;
         if (user && !currentUser) {
