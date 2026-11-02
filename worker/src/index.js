@@ -181,7 +181,7 @@ export default {
 
     const lastUser = [...body.messages].reverse().find(m => m && m.role === "user");
     if (!lastUser || typeof lastUser.content !== "string") return json({ error: "A user message is required." }, 400);
-    const fixedAnswer = identityAnswer(lastUser.content);
+    const fixedAnswer = identityAnswer(lastUser.content, model);
     if (fixedAnswer) {
       return json({ id: "gozie-identity-" + crypto.randomUUID(), object: "chat.completion", created: Math.floor(Date.now()/1000), model: env.MODEL_ID || IDENTITY.default_model || MODEL_FALLBACK, choices: [{ index: 0, message: { role: "assistant", content: fixedAnswer }, finish_reason: "stop" }] });
     }
