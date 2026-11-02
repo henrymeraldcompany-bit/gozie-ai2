@@ -1,4 +1,4 @@
-import IDENTITY from "./gozie_identity.json";
+const DEFAULT_IDENTITY = { identity: { name: "Gozie AI", creator: "Henry Cee", developer: "Henry Cee", founder: "Henry Cee", owner: "Henry Cee" }, default_model: "@cf/meta/llama-3.2-3b-instruct" };
 
 const MODEL_FALLBACK = "@cf/meta/llama-3.2-3b-instruct";
 const ALLOWED_ORIGIN = "https://henrymeraldcompany-bit.github.io";
@@ -131,7 +131,7 @@ async function searchWeb(query) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env) {\n    const IDENTITY = { ...DEFAULT_IDENTITY, identity: { ...DEFAULT_IDENTITY.identity, name: env.GOZIE_NAME || DEFAULT_IDENTITY.identity.name, creator: env.GOZIE_CREATOR || DEFAULT_IDENTITY.identity.creator, developer: env.GOZIE_CREATOR || DEFAULT_IDENTITY.identity.developer, owner: env.GOZIE_OWNER || DEFAULT_IDENTITY.identity.owner } };
     const origin = request.headers.get("Origin") || "";
     if (origin && origin !== ALLOWED_ORIGIN) return json({ error: "Origin not allowed." }, 403, ALLOWED_ORIGIN);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: {
