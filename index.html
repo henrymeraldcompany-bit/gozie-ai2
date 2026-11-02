@@ -811,17 +811,17 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     if(busy) return; const promptText=text.trim(); if(!promptText) return;
     if(!currentChat()) { const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(chat); currentId=chat.id; }
     addMessage('user',promptText); $('prompt').value=''; resizePrompt(); busy=true; setSending(true);
-    let searchNote=''; let searchContext='';
+    let searchNote=''; let searchContext=''; let searchResults=[];
     try {
       if(searchEnabled) {
-        const search=await searchWeb(promptText); searchNote=search.note;
+        const search=await searchWeb(promptText); searchNote=search.note; searchResults=search.results;
         if(search.results.length) searchContext='Live web search results (use these as source material and include their URLs in your answer):\n'+search.results.map((r,i)=>`${i+1}. ${r.title}\nURL: ${r.url}\n${r.content}`).join('\n\n');
       }
       const chat=currentChat(); const history=(chat?.messages||[]).slice(-16).map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.content}));
       const messages=[{role:'system',content:'You are Gozie AI, a helpful, clear and thoughtful assistant. Be accurate. When live search results are supplied, use them carefully and cite the provided URLs in your answer. Do not claim to have searched the web unless search results were supplied.'}];
       if(searchContext) messages.push({role:'system',content:searchContext});
       messages.push(...history);
-      const answer=await requestModel(messages,searchContext?search.results:[]);
+      const answer=await requestModel(messages,searchResults);
       addMessage('assistant',searchNote?'Note: '+searchNote+'\n\n'+answer:answer);
     } catch(error) {
       console.error('Gozie AI model request failed:',error);
