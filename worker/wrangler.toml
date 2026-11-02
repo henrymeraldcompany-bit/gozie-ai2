@@ -1,0 +1,9 @@
+name = "gozie-ai-backend"
+main = "src/index.js"
+compatibility_date = "2026-11-02"
+
+[ai]
+binding = "AI"
+
+[vars]
+MODEL_ID = "@cf/meta/llama-3.2-3b-instruct"
