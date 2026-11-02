@@ -131,7 +131,8 @@ async function searchWeb(query) {
 }
 
 export default {
-  async fetch(request, env) {\n    const IDENTITY = { ...DEFAULT_IDENTITY, identity: { ...DEFAULT_IDENTITY.identity, name: env.GOZIE_NAME || DEFAULT_IDENTITY.identity.name, creator: env.GOZIE_CREATOR || DEFAULT_IDENTITY.identity.creator, developer: env.GOZIE_CREATOR || DEFAULT_IDENTITY.identity.developer, owner: env.GOZIE_OWNER || DEFAULT_IDENTITY.identity.owner } };
+  async fetch(request, env) {
+    const IDENTITY = { ...DEFAULT_IDENTITY, identity: { ...DEFAULT_IDENTITY.identity, name: env.GOZIE_NAME || DEFAULT_IDENTITY.identity.name, creator: env.GOZIE_CREATOR || DEFAULT_IDENTITY.identity.creator, developer: env.GOZIE_CREATOR || DEFAULT_IDENTITY.identity.developer, owner: env.GOZIE_OWNER || DEFAULT_IDENTITY.identity.owner } };
     const origin = request.headers.get("Origin") || "";
     if (origin && origin !== ALLOWED_ORIGIN) return json({ error: "Origin not allowed." }, 403, ALLOWED_ORIGIN);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: {
