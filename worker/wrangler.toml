@@ -7,3 +7,6 @@ binding = "AI"
 
 [vars]
 MODEL_ID = "@cf/meta/llama-3.2-3b-instruct"
+GOZIE_NAME = "Gozie AI"
+GOZIE_CREATOR = "Henry Cee"
+GOZIE_OWNER = "Henry Cee"
