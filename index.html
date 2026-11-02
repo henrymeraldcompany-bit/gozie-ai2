@@ -757,51 +757,54 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       button.append(swatch,name,check); button.addEventListener('click',()=>setAccent(item.value)); root.appendChild(button);
     });
   }
-  // Internal assistant connection. These values are not displayed in the app UI.
-  // Previous saved values are reused so an existing setup is not silently discarded.
+  // Gozie AI hosted backend. The model and search service run online, not on this phone.
+  const GOZIE_BACKEND_BASE = 'https://gozie-ai-backend.henrymeraldcompany.workers.dev/v1';
   const INTERNAL_MODEL = Object.freeze({
-    endpoint: localStorage.getItem(STORAGE.modelEndpoint) || 'http://127.0.0.1:8080/v1',
-    model: localStorage.getItem(STORAGE.modelId) || 'smollm3',
-    key: localStorage.getItem(STORAGE.modelKey) || ''
+    endpoint: GOZIE_BACKEND_BASE,
+    model: 'gozie-ai',
+    key: ''
   });
   function readModelSettings() {
     return { ...INTERNAL_MODEL };
   }
   function normalizeApiBase(value) {
-    let base=String(value||'').trim().replace(/\/+$/,'');
+    let base=String(value||'').trim().replace(/\\/+$/,'');
     if (!base) throw new Error('Assistant service is not configured.');
-    if (!/^https?:\/\//i.test(base)) throw new Error('Assistant service address is invalid.');
-    if (!/\/v1$/i.test(base)) base+='/v1';
+    if (!/^https?:\\/\\//i.test(base)) throw new Error('Assistant service address is invalid.');
+    if (!/\\/v1$/i.test(base)) base+='/v1';
     return base;
   }
   function friendlyNetworkError(error) {
     if(error && (error.name==='AbortError' || error.name==='TimeoutError')) return 'The assistant is taking too long to respond. Please try again.';
-    if(error && error instanceof TypeError) return 'Gozie AI could not reach its assistant service. Please check your connection and try again.';
-    return 'Gozie AI could not complete your request. Please try again.';
+    if(error && error instanceof TypeError) return 'Gozie AI could not reach its online assistant service. Please check your connection and try again.';
+    return error?.message || 'Gozie AI could not complete your request. Please try again.';
+  }
+  async function getGozieAuthToken() {
+    if (!currentUser || !currentUser.emailVerified) throw new Error('Please sign in with your verified Gozie AI account to use the assistant.');
+    return await currentUser.getIdToken();
   }
   async function searchWeb(query) {
-    // Internal search configuration: never shown as a user-facing setting.
-    // A previously configured endpoint remains available without exposing controls in the app.
-    const endpoint=localStorage.getItem(STORAGE.searchEndpoint)||'';
-    if(!endpoint) return {results:[],note:'Web Search is enabled, but no search endpoint is configured. A search service has not been configured yet.'};
-    let url; try { url=new URL(endpoint); } catch { return {results:[],note:'The configured Web Search endpoint is not a valid URL.'}; }
-    url.searchParams.set('q',query); url.searchParams.set('format','json');
+    const endpoint=GOZIE_BACKEND_BASE+'/search';
     try {
-      const response=await fetch(url.toString(),{headers:{Accept:'application/json'},signal:AbortSignal.timeout?AbortSignal.timeout(12000):undefined});
-      if(!response.ok) throw new Error('Search endpoint returned HTTP '+response.status+'.');
-      const data=await response.json();
+      const token=await getGozieAuthToken();
+      const url=new URL(endpoint);
+      url.searchParams.set('q',query);
+      const response=await fetch(url.toString(),{headers:{Accept:'application/json',Authorization:'Bearer '+token},signal:AbortSignal.timeout?AbortSignal.timeout(15000):undefined});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error(data.error||('Search service returned HTTP '+response.status+'.'));
       const results=(Array.isArray(data.results)?data.results:[]).slice(0,5).map(r=>({title:r.title||'Search result',url:r.url||'',content:r.content||r.snippet||''})).filter(r=>r.url);
-      return results.length?{results,note:''}:{results:[],note:'The search service returned no usable results.'};
+      return results.length?{results,note:''}:{results:[],note:'Web Search did not find any usable results for this query.'};
     } catch(error) { return {results:[],note:'Web Search could not connect: '+friendlyNetworkError(error)}; }
   }
-  async function requestModel(messages) {
+  async function requestModel(messages, searchResults=[]) {
     const cfg=readModelSettings(); const base=normalizeApiBase(cfg.endpoint);
-    const headers={'Content-Type':'application/json'}; if(cfg.key) headers.Authorization='Bearer '+cfg.key;
-    const response=await fetch(base+'/chat/completions',{method:'POST',headers,body:JSON.stringify({model:cfg.model,messages,temperature:.7,stream:false}),signal:AbortSignal.timeout?AbortSignal.timeout(120000):undefined});
+    const token=await getGozieAuthToken();
+    const headers={'Content-Type':'application/json','Authorization':'Bearer '+token};
+    const response=await fetch(base+'/chat/completions',{method:'POST',headers,body:JSON.stringify({model:cfg.model,messages,search_results:searchResults,temperature:.7,max_tokens:512,stream:false}),signal:AbortSignal.timeout?AbortSignal.timeout(120000):undefined});
     const data=await response.json().catch(()=>({}));
-    if(!response.ok) throw new Error(data.error?.message||data.message||('Model server returned HTTP '+response.status+'.'));
+    if(!response.ok) throw new Error(data.error||data.message||('Gozie AI server returned HTTP '+response.status+'.'));
     const content=data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? data.content;
-    if(typeof content!=='string' || !content.trim()) throw new Error('The model server responded, but no assistant message was returned.');
+    if(typeof content!=='string' || !content.trim()) throw new Error('Gozie AI server responded, but no assistant message was returned.');
     return content.trim();
   }
   async function sendMessage(text) {
@@ -818,7 +821,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       const messages=[{role:'system',content:'You are Gozie AI, a helpful, clear and thoughtful assistant. Be accurate. When live search results are supplied, use them carefully and cite the provided URLs in your answer. Do not claim to have searched the web unless search results were supplied.'}];
       if(searchContext) messages.push({role:'system',content:searchContext});
       messages.push(...history);
-      const answer=await requestModel(messages);
+      const answer=await requestModel(messages,searchContext?search.results:[]);
       addMessage('assistant',searchNote?'Note: '+searchNote+'\n\n'+answer:answer);
     } catch(error) {
       console.error('Gozie AI model request failed:',error);
