@@ -768,10 +768,10 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     return { ...INTERNAL_MODEL };
   }
   function normalizeApiBase(value) {
-    let base=String(value||'').trim().replace(/\\/+$/,'');
+    let base=String(value||'').trim().replace(/\/+$/,'');
     if (!base) throw new Error('Assistant service is not configured.');
-    if (!/^https?:\\/\\//i.test(base)) throw new Error('Assistant service address is invalid.');
-    if (!/\\/v1$/i.test(base)) base+='/v1';
+    if (!(base.startsWith('https://') || base.startsWith('http://'))) throw new Error('Assistant service address is invalid.');
+    if (!base.endsWith('/v1')) base+='/v1';
     return base;
   }
   function friendlyNetworkError(error) {
