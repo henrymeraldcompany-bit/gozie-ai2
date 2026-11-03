@@ -826,7 +826,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     } catch(error) {
       console.error('Gozie AI model request failed:',error);
       const detail=friendlyNetworkError(error);
-      addMessage('assistant','I’m having trouble responding right now. Please try again in a moment.');
+      addMessage('assistant','I’m having trouble responding right now. Diagnostic: '+detail);
     } finally { busy=false; setSending(false); $('prompt').focus(); }
   }
   function setSending(value) {
