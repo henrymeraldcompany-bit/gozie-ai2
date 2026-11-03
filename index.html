@@ -822,7 +822,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       if(searchContext) messages.push({role:'system',content:searchContext});
       messages.push(...history);
       const answer=await requestModel(messages,searchResults);
-      addMessage('assistant',searchNote?'Note: '+searchNote+'\n\n'+answer:answer);
+      addMessage('assistant',answer);
     } catch(error) {
       console.error('Gozie AI model request failed:',error);
       const detail=friendlyNetworkError(error);
