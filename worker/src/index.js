@@ -121,7 +121,7 @@ async function searchWeb(query) {
       url: String(r.url || ""),
       content: String(r.description || r.snippet || "").slice(0, 1600)
     }))
-    .filter(r => /^https?:\\/\\//i.test(r.url));
+    .filter(r => { try { const parsed = new URL(r.url); return parsed.protocol === "http:" || parsed.protocol === "https:"; } catch { return false; } });
   if (!results.length) throw new Error("The free web search provider returned no usable results.");
   return results;
 }
