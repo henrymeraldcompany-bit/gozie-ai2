@@ -815,7 +815,11 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     try {
       if(searchEnabled) {
         const search=await searchWeb(promptText); searchNote=search.note; searchResults=search.results;
-        if(search.results.length) searchContext='Live web search results (use these as source material and include their URLs in your answer):\n'+search.results.map((r,i)=>`${i+1}. ${r.title}\nURL: ${r.url}\n${r.content}`).join('\n\n');
+        if(!searchResults.length) {
+          addMessage('assistant','Live Web Search could not retrieve reliable results for this question. Please try again shortly. I have not substituted an older answer.');
+          return;
+        }
+        searchContext='Live web search results (use these as source material and include their URLs in your answer):\\n'+searchResults.map((r,i)=>`${i+1}. ${r.title}\\nURL: ${r.url}\\n${r.content}`).join('\\n\\n');
       }
       const chat=currentChat(); const history=(chat?.messages||[]).slice(-16).map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.content}));
       const messages=[{role:'system',content:'You are Gozie AI, a helpful, clear and thoughtful assistant. Be accurate. When live search results are supplied, use them carefully and cite the provided URLs in your answer. Do not claim to have searched the web unless search results were supplied.'}];
