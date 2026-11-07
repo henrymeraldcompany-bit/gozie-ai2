@@ -834,7 +834,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       );
     } else {
       actions.append(
-        createMessageAction('Read aloud','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5l-5 4H4Z"/><path d="M17 9a5 5 0 0 1 0 6m2.5-9a9 9 0 0 1 0 12"/></svg>',()=>readMessageAloud(message.content)),
+        createMessageAction(activeSpeechMessage===message?'Stop reading':'Read aloud',activeSpeechMessage===message?'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5l-5 4H4Z"/><path d="M17 9a5 5 0 0 1 0 6m2.5-9a9 9 0 0 1 0 12"/></svg>',()=>toggleMessageSpeech(message),activeSpeechMessage===message),
         createMessageAction('Copy',copyIcon,()=>copyMessage(message.content)),
         createMessageAction('Download','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 20h16"/></svg>',()=>downloadTextFile('gozie-ai-reply.md',message.content,'text/markdown;charset=utf-8')),
 
@@ -857,13 +857,36 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       notify('Message copied.');
     } catch(error) { notify('Could not copy this message.'); }
   }
-  function readMessageAloud(content) {
+  let activeSpeechUtterance=null;
+  let activeSpeechMessage=null;
+  function refreshSpeechAction() {
+    const button=[...document.querySelectorAll('.message-action')].find(el=>el.getAttribute('aria-label')==='Read aloud'||el.getAttribute('aria-label')==='Stop reading');
+    if(!button) return;
+    const speaking=!!activeSpeechMessage;
+    button.classList.toggle('active',speaking);
+    button.title=speaking?'Stop reading':'Read aloud';
+    button.setAttribute('aria-label',speaking?'Stop reading':'Read aloud');
+    button.innerHTML=speaking?'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5l-5 4H4Z"/><path d="M17 9a5 5 0 0 1 0 6m2.5-9a9 9 0 0 1 0 12"/></svg>';
+  }
+  function stopMessageSpeech() {
+    activeSpeechUtterance=null;
+    activeSpeechMessage=null;
+    if('speechSynthesis' in window) window.speechSynthesis.cancel();
+    refreshSpeechAction();
+  }
+  function toggleMessageSpeech(message) {
+    if(activeSpeechMessage===message) { stopMessageSpeech(); return; }
     if(!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance==='undefined') {
       notify('Read aloud is not supported in this browser.'); return;
     }
     window.speechSynthesis.cancel();
-    const utterance=new SpeechSynthesisUtterance(String(content||''));
+    const utterance=new SpeechSynthesisUtterance(String(message.content||''));
     utterance.lang=navigator.language||'en-US';
+    activeSpeechMessage=message;
+    activeSpeechUtterance=utterance;
+    utterance.onend=()=>{if(activeSpeechUtterance===utterance){activeSpeechUtterance=null;activeSpeechMessage=null;refreshSpeechAction();}};
+    utterance.onerror=()=>{if(activeSpeechUtterance===utterance){activeSpeechUtterance=null;activeSpeechMessage=null;refreshSpeechAction();}};
+    refreshSpeechAction();
     window.speechSynthesis.speak(utterance);
   }
   function setMessageFeedback(index,value) {
