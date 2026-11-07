@@ -146,7 +146,8 @@ button:disabled { opacity:.55; cursor:not-allowed; }
 
 .message-actions { display:flex; flex-wrap:wrap; align-items:center; gap:3px; width:100%; max-width:100%; margin:1px 0 0 2px; }
 .message-row.user .message-actions { justify-content:flex-end; align-self:flex-end; margin-right:2px; }
-.message-action { min-height:27px; display:inline-flex; align-items:center; gap:5px; padding:4px 7px; border:0; border-radius:7px; background:transparent; color:var(--subtle); font-size:10px; line-height:1; cursor:pointer; }
+.message-action { width:29px; min-width:29px; height:29px; min-height:29px; display:inline-flex; align-items:center; justify-content:center; gap:0; padding:0; border:0; border-radius:7px; background:transparent; color:var(--subtle); font-size:0; line-height:1; cursor:pointer; }
+.message-action span { display:none !important; }
 .message-action:hover { color:var(--text); background:var(--panel-2); }
 .message-action.active { color:var(--accent); background:var(--accent-soft); }
 .message-action svg { width:13px; height:13px; flex:none; }
