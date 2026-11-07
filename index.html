@@ -159,8 +159,8 @@ button:disabled { opacity:.55; cursor:not-allowed; }
 .mic-btn { width:39px; height:39px; display:grid; place-items:center; flex:none; border:1px solid var(--border); border-radius:12px; background:var(--panel-2); color:var(--muted); cursor:pointer; }
 .mic-btn:hover { color:var(--text); border-color:var(--subtle); }
 .mic-btn svg { width:18px; height:18px; }
-.mic-btn.recording { border-color:var(--danger); background:rgba(229,107,113,.14); color:var(--danger); animation:mic-pulse 1.4s ease-in-out infinite; }
-@keyframes mic-pulse { 50% { box-shadow:0 0 0 5px rgba(229,107,113,.09); } }
+.mic-btn.recording { border-color:var(--accent); background:var(--accent-soft); color:var(--accent); animation:mic-pulse 1.4s ease-in-out infinite; }
+@keyframes mic-pulse { 50% { box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 18%,transparent); } }
 .voice-status { margin:7px 3px 0; color:var(--muted); font-size:10px; line-height:1.45; }
 .voice-status[hidden] { display:none; }
 .composer-area { flex:none; padding:10px 20px calc(10px + env(safe-area-inset-bottom)); background:linear-gradient(180deg,transparent 0%,var(--bg) 22%); }
@@ -1145,6 +1145,8 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   function resizePrompt() { const input=$('prompt'); input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,145)+'px'; }
   let voiceRecognition=null;
   let voiceListening=false;
+  let voiceStopRequested=false;
+  let voiceSilenceTimer=null;
   let voiceBaseText='';
   function setVoiceStatus(message,show=true) {
     $('voiceStatus').textContent=message;
@@ -1156,10 +1158,32 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     button.setAttribute('aria-label',recording?'Stop voice input':'Start voice input');
     button.title=recording?'Stop voice input':'Dictate a message';
   }
+  function clearVoiceSilenceTimer() {
+    if(voiceSilenceTimer) clearTimeout(voiceSilenceTimer);
+    voiceSilenceTimer=null;
+  }
+  function finishVoiceInput() {
+    clearVoiceSilenceTimer();
+    voiceListening=false; voiceRecognition=null; voiceStopRequested=false;
+    setVoiceButtonState(false);
+    if($('prompt').value.trim()) setVoiceStatus('Voice input added. You can edit the text before sending.');
+    else setVoiceStatus('',false);
+  }
+  function resetVoiceSilenceTimer(recognition) {
+    clearVoiceSilenceTimer();
+    voiceSilenceTimer=setTimeout(()=>{
+      if(!voiceListening || voiceRecognition!==recognition) return;
+      voiceStopRequested=true;
+      try { recognition.stop(); } catch(error) { finishVoiceInput(); }
+    },3000);
+  }
   function stopVoiceInput() {
+    voiceStopRequested=true;
+    clearVoiceSilenceTimer();
     if(voiceRecognition) {
-      try { voiceRecognition.stop(); } catch(error) { console.warn('Voice input stop:',error); }
-    }
+      try { voiceRecognition.stop(); }
+      catch(error) { console.warn('Voice input stop:',error); finishVoiceInput(); }
+    } else finishVoiceInput();
   }
   function toggleVoiceInput() {
     if(voiceListening) { stopVoiceInput(); return; }
@@ -1171,15 +1195,17 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     try {
       const recognition=new Recognition();
       voiceRecognition=recognition;
+      voiceStopRequested=false;
       voiceBaseText=$('prompt').value.trimEnd();
       if(voiceBaseText) voiceBaseText+=' ';
       recognition.lang=navigator.language||'en-US';
       recognition.interimResults=true;
-      recognition.continuous=false;
+      recognition.continuous=true;
       recognition.maxAlternatives=1;
       recognition.onstart=()=>{
         voiceListening=true; setVoiceButtonState(true);
-        setVoiceStatus('Listening… Speak clearly. Your browser may use its speech-recognition service to process audio.');
+        setVoiceStatus('Listening… It will stop after 3 seconds of silence. Tap the microphone to stop sooner.');
+        resetVoiceSilenceTimer(recognition);
       };
       recognition.onresult=event=>{
         let finalText='',interimText='';
@@ -1190,26 +1216,37 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
         }
         $('prompt').value=voiceBaseText+(finalText+interimText).trim();
         resizePrompt();
+        resetVoiceSilenceTimer(recognition);
       };
       recognition.onerror=event=>{
+        if(event.error==='no-speech') {
+          // Keep the three-second silence timer in control of when listening ends.
+          return;
+        }
         const messages={
           'not-allowed':'Microphone permission was denied. Allow microphone access in your browser settings.',
           'service-not-allowed':'Your browser blocked its speech-recognition service.',
           'audio-capture':'No microphone was detected.',
-          'no-speech':'No speech was detected. Tap the microphone and try again.',
           'network':'The browser speech-recognition service could not connect.'
         };
+        voiceStopRequested=true;
+        clearVoiceSilenceTimer();
         setVoiceStatus(messages[event.error]||'Voice input stopped. Please try again.');
         notify(messages[event.error]||'Voice input stopped. Please try again.');
       };
       recognition.onend=()=>{
-        voiceListening=false; voiceRecognition=null; setVoiceButtonState(false);
-        if($('prompt').value.trim()) setVoiceStatus('Voice input added. You can edit the text before sending.');
-        else setVoiceStatus('',false);
+        if(voiceListening && !voiceStopRequested && voiceRecognition===recognition) {
+          // Some browsers end a recognition segment on their own; resume while the
+          // silence timer is still active so the user can continue speaking.
+          try { recognition.start(); return; }
+          catch(error) { console.warn('Voice input restart:',error); }
+        }
+        finishVoiceInput();
       };
       recognition.start();
     } catch(error) {
-      voiceRecognition=null; voiceListening=false; setVoiceButtonState(false);
+      clearVoiceSilenceTimer();
+      voiceRecognition=null; voiceListening=false; voiceStopRequested=false; setVoiceButtonState(false);
       notify('Could not start voice input. Check microphone permission and try again.');
     }
   }
