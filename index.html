@@ -1696,7 +1696,10 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     if(asksForExplanation) return false;
     const directAction=/\b(?:generate|create|make|draw|paint|design|render|illustrate|produce|show me)\b/.test(value);
     const visualAsset=/\b(?:images?|pictures?|photos?|photographs?|illustrations?|artworks?|portraits?|wallpapers?|logos?|posters?|banners?|thumbnails?|icons?|covers?|graphics?|memes?|stickers?|avatars?|infographics?|backgrounds?|scenes?|flyers?|mockups?|diagrams?|concept art|comic panels?)\b/.test(value);
-    if(directAction && visualAsset) return true;
+    const technicalImplementation=/\b(?:api|endpoint|source code|code|script|function|programming|backend|frontend|database|server|pipeline|workflow)\b/.test(value)
+      && /\b(?:build|write|implement|program|create|design|generate|make)\b/.test(value)
+      && !/\b(?:image|picture|photo|photograph|illustration|artwork|portrait|logo|poster|banner|thumbnail|wallpaper|graphic|infographic|diagram|mockup)\b.{0,40}\b(?:of|for|about|showing|depicting)\b/.test(value);
+    if(directAction && visualAsset && !technicalImplementation) return true;
     const hasPhoto=(files||[]).some(file=>String(file?.type||'').startsWith('image/'));
     const editAction=/\b(?:edit|modify|change|transform|restyle|retouch|enhance|remove|replace|add|erase|blur|sharpen|crop|recolour|recolor)\b/.test(value);
     const refersToPhoto=/\b(?:this|that|my|the|attached|uploaded|photo|image|picture|background|it)\b/.test(value);
