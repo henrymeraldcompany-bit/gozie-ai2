@@ -204,8 +204,10 @@ button:disabled { opacity:.55; cursor:not-allowed; }
 .composer:focus-within { border-color:color-mix(in srgb,var(--accent) 42%,var(--border)); }
 .composer textarea { display:block; width:100%; min-height:40px; max-height:145px; resize:none; padding:7px 7px 8px; border:0; outline:0; background:transparent; color:var(--text); font-size:14px; line-height:1.5; }
 .composer textarea::placeholder { color:var(--subtle); }
-.composer-tools { display:flex; align-items:center; gap:7px; min-height:35px; }
-.tool-toggle { display:inline-flex; align-items:center; gap:7px; padding:6px 8px; border:0; border-radius:9px; background:transparent; color:var(--muted); font-size:11px; cursor:pointer; }
+.composer-tools { display:flex; flex-wrap:nowrap; align-items:center; gap:5px; min-height:35px; min-width:0; }
+.tool-toggle { display:inline-flex; flex:0 0 auto; align-items:center; gap:6px; padding:6px 7px; border:0; border-radius:9px; background:transparent; color:var(--muted); font-size:10.5px; white-space:nowrap; cursor:pointer; }
+.web-search-toggle { gap:5px; padding-left:5px; padding-right:5px; font-size:10px; white-space:nowrap; }
+.web-search-toggle .toggle-track { flex:0 0 29px; }
 .tool-toggle:hover { background:var(--panel-2); color:var(--text); }
 .tool-toggle svg { width:16px; height:16px; }
 .tool-toggle.active { color:var(--accent); }
@@ -389,7 +391,8 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     .theme-option { gap:5px; font-size:11px; }
   .accent-grid { gap:7px; }
   .accent-option { padding:8px; }
-  .tool-toggle { gap:5px; padding:5px 6px; }
+  .tool-toggle { gap:4px; padding:5px 5px; }
+  .web-search-toggle { font-size:9.5px; gap:4px; }
   }
 </style>
 </head>
@@ -441,7 +444,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
               </button>
               <button class="tool-toggle" type="button" id="imageGenToggle" aria-pressed="false" title="Create an image or edit an attached photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21M16 3l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3Z"/></svg><span>Image</span></button>
-              <button class="tool-toggle" type="button" id="webSearchToggle" aria-pressed="false" title="Toggle web search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span>Web Search</span><span class="toggle-track"></span></button>
+              <button class="tool-toggle web-search-toggle" type="button" id="webSearchToggle" aria-pressed="false" title="Toggle web search"><span>Web Search</span><span class="toggle-track"></span></button>
               <span class="composer-spacer"></span>
               <button class="mic-btn" id="voiceInputButton" type="button" aria-label="Start voice input" aria-pressed="false" title="Dictate a message">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.5m-4 0h8"/></svg>
