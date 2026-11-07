@@ -1404,7 +1404,8 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     const finalPrompt=promptText || (attachments.length?'Please examine the attached item(s) and help me understand them.':'');
     let modelAttachments=attachments;
     let videoPreviews=new Map();
-    if(attachments.some(isVideoFile)) {
+    const preparingVideo=attachments.some(isVideoFile);
+    if(preparingVideo) {
       busy=true; setSending(true);
       try {
         const prepared=await prepareVideoAttachments(attachments);
@@ -1414,9 +1415,16 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
         notify(error.message||'Gozie AI could not prepare that video. Try an MP4 or WebM clip.');
         return;
       }
-      busy=false; setSending(false);
     }
-    const attachmentMetadata=attachments.length ? await makeAttachmentMetadata(attachments,videoPreviews) : [];
+    let attachmentMetadata=[];
+    try {
+      attachmentMetadata=attachments.length ? await makeAttachmentMetadata(attachments,videoPreviews) : [];
+    } catch(error) {
+      if(preparingVideo) { busy=false; setSending(false); }
+      notify('The attachment preview could not be created. Please try again.');
+      return;
+    }
+    if(preparingVideo) { busy=false; setSending(false); }
     const messageContent=finalPrompt;
     if(editIndex===null) {
       if(!currentChat()) { const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(chat); currentId=chat.id; }
