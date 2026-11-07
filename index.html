@@ -441,6 +441,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
               <button class="attach-btn" id="attachmentButton" type="button" aria-label="Add attachment" aria-expanded="false" title="Add photos, files or audio">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
               </button>
+              <button class="tool-toggle" type="button" id="imageGenToggle" aria-pressed="false" title="Create an image or edit an attached photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21M16 3l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3Z"/></svg><span>Image</span></button>
               <button class="tool-toggle" type="button" id="webSearchToggle" aria-pressed="false" title="Toggle web search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span>Web Search</span><span class="toggle-track"></span></button>
               <span class="composer-spacer"></span>
               <button class="mic-btn" id="voiceInputButton" type="button" aria-label="Start voice input" aria-pressed="false" title="Dictate a message">
@@ -637,9 +638,8 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     searchEnabled: localStorage.getItem(STORAGE.searchEnabled) === 'true'
   };
   let createAccountMode = false;
-  let createMode = 'image';
-  let imageGenerationBusy = false;
-  let latestGeneratedImageData = '';
+  let imageGenerationMode = false;
+  const generatedImageBlobs = new Map();
   let searchEnabled = localStorage.getItem(STORAGE.searchEnabled) === 'true';
   let selectionMode = false;
   const selectedChatIds = new Set();
@@ -799,7 +799,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       }
 
       if (currentUser?.uid !== uid) return;
-      currentId = chats[0]?.id || null;
+      restoreCurrentChat();
       localStorage.setItem(userCacheKey(uid, 'chats'), JSON.stringify(chats));
       setTheme(localStorage.getItem(STORAGE.theme) || 'dark');
       setAccent(localStorage.getItem(STORAGE.accent) || '#ed8244');
@@ -822,20 +822,28 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
   function closeSidebar() { $('sidebar').classList.remove('open'); $('drawerScrim').classList.remove('show'); }
   function openSidebar() { $('sidebar').classList.add('open'); $('drawerScrim').classList.add('show'); }
+  function activeChatStorageKey() { return currentUser?.uid ? userCacheKey(currentUser.uid,'active_chat') : 'gozie_guest_active_chat'; }
+  function persistCurrentChat() { if(currentId) localStorage.setItem(activeChatStorageKey(),currentId); }
+  function restoreCurrentChat() {
+    const saved=localStorage.getItem(activeChatStorageKey());
+    currentId=saved && chats.some(chat=>chat.id===saved) ? saved : (chats[0]?.id||null);
+    persistCurrentChat();
+  }
   function newChat() {
     const chat = {id:makeId(), title:'New chat', messages:[], updated:Date.now()};
-    chats.unshift(chat); currentId = chat.id; saveChats(); showView('chat'); renderChat(); closeSidebar(); $('prompt').focus();
+    chats.unshift(chat); currentId = chat.id; persistCurrentChat(); saveChats(); showView('chat'); renderChat(); closeSidebar(); $('prompt').focus();
   }
   let startupChatReady=false;
   function startFreshStartupChat() {
     if(startupChatReady) return;
     startupChatReady=true;
-    const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()};
-    chats.unshift(chat);
-    currentId=chat.id;
-    saveChats();
-    showView('chat');
-    renderChat();
+    restoreCurrentChat();
+    if(!currentId) {
+      const existingEmpty=chats.find(chat=>(chat.title||'New chat')==='New chat' && chat.messages.length===0);
+      if(existingEmpty) currentId=existingEmpty.id;
+      else { const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(chat); currentId=chat.id; saveChats(); }
+    }
+    persistCurrentChat(); showView('chat'); renderChat();
   }
   function createWelcome() {
     const welcome = document.createElement('div'); welcome.className = 'welcome';
@@ -1009,7 +1017,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     row.dataset.messageIndex=String(index);
     const role=document.createElement('div'); role.className='message-role'; role.textContent=isUser?'You':'Gozie AI';
     const attachments=Array.isArray(message.attachments)?message.attachments:[];
-    if(isUser && attachments.length) {
+    if(attachments.length) {
       const gallery=document.createElement('div'); gallery.className='message-attachments';
       attachments.forEach(item=>{
         const card=document.createElement('div'); card.className='message-attachment-card';
@@ -1040,6 +1048,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
         createMessageAction('Copy',copyIcon,()=>copyMessage(message.content))
       );
     } else {
+      if(message.generatedImageKey && generatedImageBlobs.has(message.generatedImageKey)) actions.append(createMessageAction('Download image','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 20h16"/></svg>',()=>downloadGeneratedChatImage(message.generatedImageKey)));
       actions.append(
         createMessageAction(activeSpeechMessage===message?'Stop reading':'Read aloud',activeSpeechMessage===message?'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5l-5 4H4Z"/><path d="M17 9a5 5 0 0 1 0 6m2.5-9a9 9 0 0 1 0 12"/></svg>',()=>toggleMessageSpeech(message),activeSpeechMessage===message),
         createMessageAction('Copy',copyIcon,()=>copyMessage(message.content)),
@@ -1163,7 +1172,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
         button.addEventListener('click',()=>{selectedChatIds.has(chat.id)?selectedChatIds.delete(chat.id):selectedChatIds.add(chat.id);renderHistory();});
         entry.append(button,check);
       } else {
-        button.addEventListener('click',()=>{ if(suppressNextHistoryClick){suppressNextHistoryClick=false;return;} currentId=chat.id; showView('chat'); renderChat(); closeSidebar(); });
+        button.addEventListener('click',()=>{ if(suppressNextHistoryClick){suppressNextHistoryClick=false;return;} currentId=chat.id; persistCurrentChat(); showView('chat'); renderChat(); closeSidebar(); });
         attachLongPress(button,chat.id);
         entry.appendChild(button);
       }
@@ -1218,11 +1227,12 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     if(!confirm(`Delete ${count} selected conversation${count===1?'':'s'}? This cannot be undone.`))return;
     deleteChats([...selectedChatIds]);exitBulkDelete();
   }
-  function addMessage(role,content,attachments=[]) {
+  function addMessage(role,content,attachments=[],generatedBlob=null) {
     let chat=currentChat(); if (!chat) { const created={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(created); currentId=created.id; chat=created; }
     const message={role,content:String(content)};
     if(attachments.length) message.attachments=attachments;
-    chat.messages.push(message); chat.updated=Date.now();
+    if(generatedBlob) { message.generatedImageKey=makeId(); generatedImageBlobs.set(message.generatedImageKey,generatedBlob); }
+    chat.messages.push(message); chat.updated=Date.now(); persistCurrentChat();
     if (chat.title==='New chat' && role==='user') chat.title=String(content).slice(0,38)+(String(content).length>38?'…':'');
     saveChats(); renderChat();
   }
@@ -1587,6 +1597,76 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       return {name:file.name,size:file.size,type:file.type,kind,preview};
     }));
   }
+  function setImageGenerationMode(enabled) {
+    imageGenerationMode=!!enabled;
+    $('imageGenToggle').classList.toggle('active',imageGenerationMode);
+    $('imageGenToggle').setAttribute('aria-pressed',String(imageGenerationMode));
+    $('prompt').placeholder=imageGenerationMode?'Describe the image to create, or attach a photo and describe how to edit it…':'Message GOZIE AI';
+    if(imageGenerationMode) notify('Image mode on. Attach a photo to edit it, or just describe an image to create.');
+  }
+  async function resizeImageForEditing(file) {
+    const bitmap=await createImageBitmap(file);
+    const scale=Math.min(1,512/Math.max(bitmap.width,bitmap.height));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(bitmap.width*scale)); canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    const context=canvas.getContext('2d');
+    if(!context) throw new Error('Could not prepare the uploaded image.');
+    context.drawImage(bitmap,0,0,canvas.width,canvas.height); bitmap.close?.();
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.88));
+    if(!blob) throw new Error('Could not prepare the uploaded image.');
+    return blob;
+  }
+  async function makeGeneratedImageThumbnail(blob) {
+    const bitmap=await createImageBitmap(blob);
+    const scale=Math.min(1,320/Math.max(bitmap.width,bitmap.height));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(bitmap.width*scale)); canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height); bitmap.close?.();
+    return canvas.toDataURL('image/jpeg',0.68);
+  }
+  function decodeGeneratedImage(base64,mime='image/jpeg') {
+    const binary=atob(base64); const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    return new Blob([bytes],{type:mime});
+  }
+  function downloadGeneratedChatImage(key) {
+    const blob=generatedImageBlobs.get(key); if(!blob) {notify('This image can be downloaded during the session in which it was created.');return;}
+    const url=URL.createObjectURL(blob); const link=document.createElement('a'); link.href=url; link.download='gozie-ai-image.jpg';
+    document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),3000);
+  }
+  async function generateImageInChat(promptText,files,metadata) {
+    if(!currentUser || !currentUser.emailVerified) { setImageGenerationMode(false); notify('Sign in with your verified Gozie AI account to create or edit images.'); openAuth(); return; }
+    const photos=files.filter(file=>file.type.startsWith('image/'));
+    if(files.some(file=>!file.type.startsWith('image/')) || photos.length>1) {notify('Image mode accepts one photo at a time. Remove other attachments first.');return;}
+    if(!promptText) {notify(photos.length?'Describe how you want the attached photo changed.':'Describe the image you want to create.');return;}
+    if(!currentChat()) {const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()};chats.unshift(chat);currentId=chat.id;}
+    addMessage('user',promptText,metadata);
+    clearPendingAttachments(); $('prompt').value=''; resizePrompt();
+    busy=true; setSending(true);
+    try {
+      const token=await getGozieAuthToken(); let response;
+      if(photos.length) {
+        const image=await resizeImageForEditing(photos[0]);
+        const form=new FormData(); form.append('prompt',promptText); form.append('image',image,'reference.jpg');
+        response=await fetch(normalizeApiBase(readModelSettings().endpoint)+'/images/edits',{method:'POST',headers:{Authorization:'Bearer '+token},body:form,signal:AbortSignal.timeout?AbortSignal.timeout(240000):undefined});
+      } else {
+        const endpoint=normalizeApiBase(readModelSettings().endpoint)+'/images/generations';
+        response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({prompt:promptText}),signal:AbortSignal.timeout?AbortSignal.timeout(240000):undefined});
+      }
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error(data.error||'Image creation is temporarily unavailable. Please try again later.');
+      const encoded=data?.data?.[0]?.b64_json;
+      if(typeof encoded!=='string'||!encoded) throw new Error('The image service did not return an image. Please try again.');
+      const blob=decodeGeneratedImage(encoded,data.data[0].mime_type||'image/jpeg');
+      const preview=await makeGeneratedImageThumbnail(blob);
+      addMessage('assistant',photos.length?'Here is the edited image.':'Here is the image I created.',[{name:'Gozie AI image.jpg',size:blob.size,type:blob.type,kind:'photos',preview}],blob);
+    } catch(error) {
+      console.error('Gozie AI image request failed:',error);
+      addMessage('assistant',error.message||'Image creation failed. Please try again.');
+    } finally {
+      busy=false; setSending(false); setImageGenerationMode(false); $('prompt').focus();
+    }
+  }
   async function sendMessage(text,editIndex=null,attachments=[]) {
     if(busy) return; const promptText=String(text||'').trim();
     if(!promptText && !attachments.length) return;
@@ -1614,6 +1694,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       return;
     }
     if(preparingVideo) { busy=false; setSending(false); }
+    if(imageGenerationMode && editIndex===null) { await generateImageInChat(promptText,attachments,attachmentMetadata); return; }
     const messageContent=finalPrompt;
     if(editIndex===null) {
       if(!currentChat()) { const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(chat); currentId=chat.id; }
@@ -1839,15 +1920,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     const isLight=document.body.classList.contains('light');
     setTheme(isLight?'dark':'light');
   });
-  $('createButton').addEventListener('click',()=>{showView('create');switchCreateMode('image');});
-  $('imageModeTab').addEventListener('click',()=>switchCreateMode('image'));
-  $('videoModeTab').addEventListener('click',()=>switchCreateMode('video'));
-  $('imageCreateForm').addEventListener('submit',event=>{event.preventDefault();generateImage();});
-  $('downloadGeneratedImage').addEventListener('click',downloadGeneratedImage);
-  $('createAnotherImage').addEventListener('click',()=>{
-    $('imageResult').hidden=true;
-    $('imagePrompt').focus();
-  });
+  $('imageGenToggle').addEventListener('click',()=>setImageGenerationMode(!imageGenerationMode));
   $('composer').addEventListener('submit',event=>{
     event.preventDefault();
     const files=pendingAttachments.map(item=>item.file);
@@ -1916,8 +1989,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
 
   // Start on a clean welcome screen. A fresh conversation is created once
   // Firebase tells us whether this app session is a guest or signed-in session.
-  currentId=null;
-  buildAccentOptions(); loadPreferences(); renderHistory(); renderChat();
+  buildAccentOptions(); loadPreferences(); restoreCurrentChat(); renderHistory(); renderChat();
   if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{if(localStorage.getItem(STORAGE.theme)==='system')setTheme('system');});
 
   // Firebase email/password only. No Google provider or redirect flow is used.
