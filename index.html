@@ -860,7 +860,10 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   let activeSpeechUtterance=null;
   let activeSpeechMessage=null;
   function refreshSpeechAction() {
-    const button=[...document.querySelectorAll('.message-action')].find(el=>el.getAttribute('aria-label')==='Read aloud'||el.getAttribute('aria-label')==='Stop reading');
+    const messages=currentChat()?.messages||[];
+    const index=activeSpeechMessage?messages.indexOf(activeSpeechMessage):-1;
+    const row=index>=0?document.querySelector('[data-message-index="'+index+'"]'):null;
+    const button=row?.querySelector('.message-action[aria-label="Read aloud"], .message-action[aria-label="Stop reading"]');
     if(!button) return;
     const speaking=!!activeSpeechMessage;
     button.classList.toggle('active',speaking);
