@@ -700,19 +700,22 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       ]);
       if (currentUser?.uid !== uid) return;
 
-      if (cloudChats.empty) {
-        // First sign-in migration: copy this browser's guest conversations
-        // only when this account has no cloud conversations yet.
-        chats = guestSnapshot.chats.map(chat => ({
-          ...chat,
-          messages: Array.isArray(chat.messages) ? chat.messages.map(message => ({ ...message })) : []
-        }));
-        await syncChatsToCloud(true, uid);
-      } else {
-        chats = cloudChats.docs.map(item => item.data())
-          .filter(chat => chat && typeof chat.id === 'string' && Array.isArray(chat.messages))
-          .sort((a, b) => (b.updated || 0) - (a.updated || 0));
+      const cachedChats = safeRead(userCacheKey(uid, 'chats'), [])
+        .filter(chat => chat && typeof chat.id === 'string' && Array.isArray(chat.messages));
+      const cloudList = cloudChats.docs.map(item => item.data())
+        .filter(chat => chat && typeof chat.id === 'string' && Array.isArray(chat.messages));
+      // Keep a locally saved conversation if a reload happened before its
+      // latest Firestore write completed; prefer whichever copy is newer.
+      const startingChats = cloudChats.empty
+        ? (cachedChats.length ? cachedChats : guestSnapshot.chats)
+        : cloudList;
+      const mergedChats = new Map(startingChats.map(chat => [chat.id, chat]));
+      for (const cached of cachedChats) {
+        const cloudCopy = mergedChats.get(cached.id);
+        if (!cloudCopy || (cached.updated || 0) > (cloudCopy.updated || 0)) mergedChats.set(cached.id, cached);
       }
+      chats = Array.from(mergedChats.values()).sort((a, b) => (b.updated || 0) - (a.updated || 0));
+      await syncChatsToCloud(true, uid);
 
       if (prefsSnap.exists()) {
         const prefs = prefsSnap.data();
@@ -1977,7 +1980,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
           clearTimeout(preferenceSyncTimer);
           activeCloudUid=null;
           chats=guestSnapshot.chats.slice();
-          currentId=chats[0]?.id||null;
+          restoreCurrentChat();
           localStorage.setItem(STORAGE.theme,guestSnapshot.theme);
           localStorage.setItem(STORAGE.accent,guestSnapshot.accent);
           localStorage.setItem(STORAGE.searchEnabled,String(guestSnapshot.searchEnabled));
