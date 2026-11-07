@@ -423,7 +423,6 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       </div>
       <div class="topbar-right">
         <button class="icon-btn" id="themeButton" aria-label="Toggle light and dark theme" title="Toggle theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.6 8.6 0 1 0 20.5 14.2Z"/></svg></button>
-        <button class="icon-btn" id="createButton" aria-label="Open creation studio" title="Create images and videos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.4 5.6L19 10l-5.6 1.4L12 17l-1.4-5.6L5 10l5.6-1.4L12 3Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z"/></svg></button>
         <button class="icon-btn" id="settingsButton" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.5 2.6-1.7-.7a8 8 0 0 1-1.7 1l-.3 1.8h-3l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.7-1.5-2.6 1.4-1.1a8 8 0 0 1 0-2l-1.4-1.1 1.5-2.6 1.7.7a8 8 0 0 1 1.7-1l.3-1.8h3l.3 1.8a8 8 0 0 1 1.7 1l1.7-.7 1.5 2.6-1.4 1.1a8 8 0 0 1 0 2Z"/></svg></button>
       </div>
     </header>
@@ -480,72 +479,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     </main>
 
 
-    <main class="page-view" id="createView" hidden>
-      <section class="create-scroll">
-        <div class="create-content">
-          <div class="create-header">
-            <p class="eyebrow">CREATIVE STUDIO</p>
-            <h1>Create with Gozie AI</h1>
-            <p>Turn your ideas into images. Choose Video to see the status of video creation.</p>
-          </div>
-          <div class="create-tabs" role="tablist" aria-label="Creation type">
-            <button class="create-tab active" id="imageModeTab" type="button" role="tab" aria-selected="true">Image</button>
-            <button class="create-tab" id="videoModeTab" type="button" role="tab" aria-selected="false">Video</button>
-          </div>
-          <section class="create-panel" id="imageCreatePanel" role="tabpanel" aria-labelledby="imageModeTab">
-            <form class="settings-card create-form" id="imageCreateForm">
-              <div class="card-heading">
-                <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
-                <div><h2>Generate an image</h2><p>Describe the image you want Gozie AI to create.</p></div>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="imagePrompt">Image description</label>
-                <textarea class="create-prompt" id="imagePrompt" maxlength="1500" required placeholder="A peaceful modern house surrounded by tropical gardens at golden hour, cinematic photography..."></textarea>
-                <span class="field-hint">Be clear about the subject, setting, lighting and visual details. Keep your description under 1,500 characters. Daily image use is limited, and shares Cloudflare's free AI allowance with chat and audio.</span>
-              </div>
-              <div class="create-controls">
-                <div class="field-group">
-                  <label class="field-label" for="imageStyle">Visual style</label>
-                  <select class="field" id="imageStyle">
-                    <option value="none">Automatic</option>
-                    <option value="photorealistic photography">Photorealistic</option>
-                    <option value="cinematic concept art">Cinematic</option>
-                    <option value="digital illustration">Digital illustration</option>
-                    <option value="anime-inspired illustration">Anime-inspired</option>
-                    <option value="high-quality 3D render">3D render</option>
-                    <option value="watercolour illustration">Watercolour</option>
-                    <option value="minimalist graphic design">Minimalist design</option>
-                  </select>
-                </div>
-                <button class="primary-btn" id="generateImageButton" type="submit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.4 5.6L19 10l-5.6 1.4L12 17l-1.4-5.6L5 10l5.6-1.4L12 3Z"/></svg>Generate image</button>
-              </div>
-              <div class="create-status" id="imageCreateStatus" role="status" aria-live="polite">Sign in with your verified Gozie AI account to generate images.</div>
-            </form>
-            <div class="create-result" id="imageResult" hidden>
-              <img id="generatedImage" alt="Image generated by Gozie AI">
-              <p class="create-result-caption" id="generatedImageCaption"></p>
-              <div class="create-result-actions">
-                <button class="primary-btn" type="button" id="downloadGeneratedImage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 20h16"/></svg>Download image</button>
-                <button class="secondary-btn" type="button" id="createAnotherImage">Create another</button>
-              </div>
-            </div>
-          </section>
-          <section class="create-panel" id="videoCreatePanel" role="tabpanel" aria-labelledby="videoModeTab" hidden>
-            <div class="settings-card">
-              <div class="card-heading">
-                <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></div>
-                <div><h2>AI video generation</h2><p>Text-to-video and image-to-video creation.</p></div>
-              </div>
-              <div class="create-provider-note">
-                <span class="provider-label">Provider availability</span>
-                <strong>Video generation is not connected yet.</strong><br>
-                The free API options verified for this setup do not currently provide video generation without per-clip charges. Gozie AI will not send video requests to a paid provider or activate billing. This section is ready for a genuinely free video provider when one becomes available.
-              </div>
-            </div>
-          </section>
-        </div>
-      </section>
-    </main>
+
 
     <main class="page-view" id="settingsView" hidden>
       <section class="settings-scroll">
@@ -1242,7 +1176,6 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     const isCreate=view==='create';
     $('chatView').hidden=view!=='chat';
     $('settingsView').hidden=!isSettings;
-    $('createView').hidden=!isCreate;
     $('settingsButton').setAttribute('aria-label',view!=='chat'?'Return to chat':'Settings');
     $('settingsButton').title=view!=='chat'?'Return to chat':'Settings';
     if (view!=='chat') closeSidebar();
@@ -1732,7 +1665,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   }
   function setSending(value) {
     $('sendButton').disabled=value; $('prompt').disabled=value;
-    $('attachmentButton').disabled=value; $('voiceInputButton').disabled=value; $('webSearchToggle').disabled=value;
+    $('attachmentButton').disabled=value; $('voiceInputButton').disabled=value; $('webSearchToggle').disabled=value; $('imageGenToggle').disabled=value;
     $('sendButton').innerHTML=value?'<span class="spinner"></span>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m-7 7 7-7 7 7"/></svg>';
   }
   function resizePrompt() { const input=$('prompt'); input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,145)+'px'; }
