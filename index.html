@@ -116,6 +116,25 @@ button:disabled { opacity:.55; cursor:not-allowed; }
 .message-row.assistant { align-items:flex-start; }
 .message-row.assistant .message-bubble { align-self:flex-start; }
 .message-bubble a { color:var(--accent); overflow-wrap:anywhere; }
+
+.message-actions { display:flex; flex-wrap:wrap; align-items:center; gap:3px; margin:1px 0 0 2px; }
+.message-row.user .message-actions { justify-content:flex-end; align-self:flex-end; margin-right:2px; }
+.message-action { min-height:27px; display:inline-flex; align-items:center; gap:5px; padding:4px 7px; border:0; border-radius:7px; background:transparent; color:var(--subtle); font-size:10px; line-height:1; cursor:pointer; }
+.message-action:hover { color:var(--text); background:var(--panel-2); }
+.message-action.active { color:var(--accent); background:var(--accent-soft); }
+.message-action svg { width:13px; height:13px; flex:none; }
+.message-edit-form { width:min(100%,690px); display:flex; flex-direction:column; gap:8px; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--panel); }
+.message-edit-textarea { width:100%; min-height:78px; max-height:220px; resize:vertical; padding:9px; border:1px solid var(--border); border-radius:9px; background:var(--bg); color:var(--text); font:inherit; font-size:13px; line-height:1.5; }
+.message-edit-actions { display:flex; justify-content:flex-end; gap:7px; }
+.message-edit-actions button { min-height:32px; padding:6px 10px; border:1px solid var(--border); border-radius:8px; background:var(--panel-2); color:var(--text); font-size:11px; cursor:pointer; }
+.message-edit-actions button.save-edit { border-color:var(--accent); background:var(--accent); color:#fff; font-weight:700; }
+.mic-btn { width:39px; height:39px; display:grid; place-items:center; flex:none; border:1px solid var(--border); border-radius:12px; background:var(--panel-2); color:var(--muted); cursor:pointer; }
+.mic-btn:hover { color:var(--text); border-color:var(--subtle); }
+.mic-btn svg { width:18px; height:18px; }
+.mic-btn.recording { border-color:var(--danger); background:rgba(229,107,113,.14); color:var(--danger); animation:mic-pulse 1.4s ease-in-out infinite; }
+@keyframes mic-pulse { 50% { box-shadow:0 0 0 5px rgba(229,107,113,.09); } }
+.voice-status { margin:7px 3px 0; color:var(--muted); font-size:10px; line-height:1.45; }
+.voice-status[hidden] { display:none; }
 .composer-area { flex:none; padding:10px 20px calc(10px + env(safe-area-inset-bottom)); background:linear-gradient(180deg,transparent 0%,var(--bg) 22%); }
 .composer-wrap { width:min(100%,760px); margin:0 auto; }
 .composer { padding:10px 11px 8px; border:1px solid var(--border); border-radius:17px; background:var(--panel); box-shadow:0 5px 24px rgba(0,0,0,.08); }
@@ -321,9 +340,13 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
             <div class="composer-tools">
               <button class="tool-toggle" type="button" id="webSearchToggle" aria-pressed="false" title="Toggle web search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span>Web Search</span><span class="toggle-track"></span></button>
               <span class="composer-spacer"></span>
+              <button class="mic-btn" id="voiceInputButton" type="button" aria-label="Start voice input" aria-pressed="false" title="Dictate a message">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.5m-4 0h8"/></svg>
+              </button>
               <button class="send-btn" id="sendButton" type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button>
             </div>
           </form>
+          <div class="voice-status" id="voiceStatus" role="status" aria-live="polite" hidden></div>
           <div class="privacy-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></svg><span>When you sign in, your conversations and preferences sync to your account. Messages are sent to Gozie AI to generate replies.</span></div>
         </div>
       </section>
@@ -624,16 +647,97 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     });
     welcome.append(mark,eyebrow,heading,copy,cards); return welcome;
   }
-  function appendMessage(message) {
-    const row=document.createElement('div'); row.className='message-row '+(message.role==='user'?'user':'assistant');
-    const role=document.createElement('div'); role.className='message-role'; role.textContent=message.role==='user'?'You':'Gozie AI';
+  function createMessageAction(label, icon, action, active=false) {
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='message-action'+(active?' active':'');
+    button.title=label;
+    button.setAttribute('aria-label',label);
+    button.innerHTML=icon+'<span>'+label+'</span>';
+    button.addEventListener('click',action);
+    return button;
+  }
+  function appendMessage(message,index) {
+    const isUser=message.role==='user';
+    const row=document.createElement('div'); row.className='message-row '+(isUser?'user':'assistant');
+    row.dataset.messageIndex=String(index);
+    const role=document.createElement('div'); role.className='message-role'; role.textContent=isUser?'You':'Gozie AI';
     const bubble=document.createElement('div'); bubble.className='message-bubble'; bubble.textContent=message.content || '';
-    row.append(role,bubble); $('thread').appendChild(row);
+    const actions=document.createElement('div'); actions.className='message-actions';
+    const copyIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>';
+    if(isUser) {
+      actions.append(
+        createMessageAction('Edit','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m14 5 5 5M4 20l4.2-.8L20 7.4 16.6 4 4.8 15.8 4 20Z"/></svg>',()=>editMessage(index)),
+        createMessageAction('Copy',copyIcon,()=>copyMessage(message.content))
+      );
+    } else {
+      actions.append(
+        createMessageAction('Read aloud','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5l-5 4H4Z"/><path d="M17 9a5 5 0 0 1 0 6m2.5-9a9 9 0 0 1 0 12"/></svg>',()=>readMessageAloud(message.content)),
+        createMessageAction('Copy',copyIcon,()=>copyMessage(message.content)),
+        createMessageAction('Good response','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v11H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3Zm0 0 5-8c2 0 3 1 2 4l-1 4h6a2 2 0 0 1 2 2l-2 7a2 2 0 0 1-2 2H7"/></svg>',()=>setMessageFeedback(index,'up'),message.feedback==='up'),
+        createMessageAction('Bad response','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 14V3H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3Zm0 0 5 8c2 0 3-1 2-4l-1-4h6a2 2 0 0 0 2-2l-2-7a2 2 0 0 0-2-2H7"/></svg>',()=>setMessageFeedback(index,'down'),message.feedback==='down'),
+        createMessageAction('Regenerate','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7 7 0 0 1 18 6l2 6M4 12l2 6a7 7 0 0 0 12.4-3"/></svg>',()=>regenerateMessage(index))
+      );
+    }
+    row.append(role,bubble,actions); $('thread').appendChild(row);
+  }
+  async function copyMessage(content) {
+    try {
+      if(navigator.clipboard?.writeText && window.isSecureContext) await navigator.clipboard.writeText(String(content||''));
+      else {
+        const helper=document.createElement('textarea'); helper.value=String(content||''); helper.style.position='fixed'; helper.style.opacity='0';
+        document.body.appendChild(helper); helper.select();
+        const copied=document.execCommand('copy'); helper.remove();
+        if(!copied) throw new Error('Copy is unavailable.');
+      }
+      notify('Message copied.');
+    } catch(error) { notify('Could not copy this message.'); }
+  }
+  function readMessageAloud(content) {
+    if(!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance==='undefined') {
+      notify('Read aloud is not supported in this browser.'); return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance=new SpeechSynthesisUtterance(String(content||''));
+    utterance.lang=navigator.language||'en-US';
+    window.speechSynthesis.speak(utterance);
+  }
+  function setMessageFeedback(index,value) {
+    const chat=currentChat(); const message=chat?.messages[index];
+    if(!message || message.role!=='assistant') return;
+    message.feedback=message.feedback===value?'':value;
+    chat.updated=Date.now(); saveChats(); renderChat();
+    notify(message.feedback==='up'?'Thanks for the feedback.':message.feedback==='down'?'Feedback noted.':'Feedback cleared.');
+  }
+  function editMessage(index) {
+    const chat=currentChat(); const message=chat?.messages[index];
+    if(!message || message.role!=='user') return;
+    const row=$('thread').querySelector('[data-message-index="'+index+'"]');
+    if(!row || row.querySelector('.message-edit-form')) return;
+    const bubble=row.querySelector('.message-bubble');
+    const actions=row.querySelector('.message-actions');
+    bubble.hidden=true; actions.hidden=true;
+    const form=document.createElement('form'); form.className='message-edit-form';
+    const textarea=document.createElement('textarea'); textarea.className='message-edit-textarea'; textarea.value=message.content||''; textarea.setAttribute('aria-label','Edit your message');
+    const buttons=document.createElement('div'); buttons.className='message-edit-actions';
+    const cancel=document.createElement('button'); cancel.type='button'; cancel.textContent='Cancel';
+    cancel.addEventListener('click',()=>{form.remove();bubble.hidden=false;actions.hidden=false;});
+    const save=document.createElement('button'); save.type='submit'; save.className='save-edit'; save.textContent='Save & resubmit';
+    buttons.append(cancel,save); form.append(textarea,buttons);
+    form.addEventListener('submit',event=>{event.preventDefault();sendMessage(textarea.value,index);});
+    row.appendChild(form); textarea.focus();
+  }
+  function regenerateMessage(index) {
+    const chat=currentChat(); if(!chat) return;
+    for(let i=index-1;i>=0;i--) {
+      if(chat.messages[i]?.role==='user') { sendMessage(chat.messages[i].content,i); return; }
+    }
+    notify('There is no earlier user message to regenerate.');
   }
   function renderChat() {
     const chat=currentChat(); const thread=$('thread'); thread.replaceChildren();
     if (!chat || !chat.messages.length) thread.appendChild(createWelcome());
-    else chat.messages.forEach(appendMessage);
+    else chat.messages.forEach((message,index)=>appendMessage(message,index));
     $('messages').scrollTop=$('messages').scrollHeight;
     renderHistory();
   }
@@ -807,10 +911,19 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     if(typeof content!=='string' || !content.trim()) throw new Error('Gozie AI server responded, but no assistant message was returned.');
     return content.trim();
   }
-  async function sendMessage(text) {
-    if(busy) return; const promptText=text.trim(); if(!promptText) return;
-    if(!currentChat()) { const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(chat); currentId=chat.id; }
-    addMessage('user',promptText); $('prompt').value=''; resizePrompt(); busy=true; setSending(true);
+  async function sendMessage(text,editIndex=null) {
+    if(busy) return; const promptText=String(text||'').trim(); if(!promptText) return;
+    if(editIndex===null) {
+      if(!currentChat()) { const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(chat); currentId=chat.id; }
+      addMessage('user',promptText);
+    } else {
+      const chat=currentChat(); const original=chat?.messages[editIndex];
+      if(!chat || !original || original.role!=='user') return;
+      original.content=promptText;
+      chat.messages.splice(editIndex+1);
+      chat.updated=Date.now(); saveChats(); renderChat();
+    }
+    $('prompt').value=''; resizePrompt(); busy=true; setSending(true);
     let searchNote=''; let searchContext=''; let searchResults=[];
     try {
       if(searchEnabled) {
@@ -838,6 +951,76 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     $('sendButton').innerHTML=value?'<span class="spinner"></span>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m-7 7 7-7 7 7"/></svg>';
   }
   function resizePrompt() { const input=$('prompt'); input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,145)+'px'; }
+  let voiceRecognition=null;
+  let voiceListening=false;
+  let voiceBaseText='';
+  function setVoiceStatus(message,show=true) {
+    $('voiceStatus').textContent=message;
+    $('voiceStatus').hidden=!show;
+  }
+  function setVoiceButtonState(recording) {
+    const button=$('voiceInputButton'); button.classList.toggle('recording',recording);
+    button.setAttribute('aria-pressed',String(recording));
+    button.setAttribute('aria-label',recording?'Stop voice input':'Start voice input');
+    button.title=recording?'Stop voice input':'Dictate a message';
+  }
+  function stopVoiceInput() {
+    if(voiceRecognition) {
+      try { voiceRecognition.stop(); } catch(error) { console.warn('Voice input stop:',error); }
+    }
+  }
+  function toggleVoiceInput() {
+    if(voiceListening) { stopVoiceInput(); return; }
+    const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!Recognition) {
+      notify('Voice input is not supported in this browser. Try another browser or use your phone keyboard microphone.');
+      return;
+    }
+    try {
+      const recognition=new Recognition();
+      voiceRecognition=recognition;
+      voiceBaseText=$('prompt').value.trimEnd();
+      if(voiceBaseText) voiceBaseText+=' ';
+      recognition.lang=navigator.language||'en-US';
+      recognition.interimResults=true;
+      recognition.continuous=false;
+      recognition.maxAlternatives=1;
+      recognition.onstart=()=>{
+        voiceListening=true; setVoiceButtonState(true);
+        setVoiceStatus('Listening… Speak clearly. Your browser may use its speech-recognition service to process audio.');
+      };
+      recognition.onresult=event=>{
+        let finalText='',interimText='';
+        for(let i=0;i<event.results.length;i++) {
+          const part=event.results[i][0]?.transcript||'';
+          if(event.results[i].isFinal) finalText+=part;
+          else interimText+=part;
+        }
+        $('prompt').value=voiceBaseText+(finalText+interimText).trim();
+        resizePrompt();
+      };
+      recognition.onerror=event=>{
+        const messages={
+          'not-allowed':'Microphone permission was denied. Allow microphone access in your browser settings.',
+          'service-not-allowed':'Your browser blocked its speech-recognition service.',
+          'audio-capture':'No microphone was detected.',
+          'no-speech':'No speech was detected. Tap the microphone and try again.',
+          'network':'The browser speech-recognition service could not connect.'
+        };
+        setVoiceStatus(messages[event.error]||'Voice input stopped. Please try again.');
+        notify(messages[event.error]||'Voice input stopped. Please try again.');
+      };
+      recognition.onend=()=>{
+        voiceListening=false; voiceRecognition=null; setVoiceButtonState(false);
+        if($('prompt').value.trim()) setVoiceStatus('Voice input added. You can edit the text before sending.');
+        else setVoiceStatus('',false);
+      };
+      recognition.start();
+    } catch(error) {
+      voiceRecognition=null; voiceListening=false; setVoiceButtonState(false);
+      notify('Could not start voice input. Check microphone permission and try again.');
+    }
+  }
   function setSearchEnabled(value) {
     searchEnabled=!!value;
     localStorage.setItem(STORAGE.searchEnabled,String(searchEnabled));
@@ -918,6 +1101,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   $('composer').addEventListener('submit',event=>{event.preventDefault();sendMessage($('prompt').value);});
   $('prompt').addEventListener('input',resizePrompt);
   $('prompt').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();$('composer').requestSubmit();}});
+  $('voiceInputButton').addEventListener('click',toggleVoiceInput);
   $('webSearchToggle').addEventListener('click',()=>setSearchEnabled(!searchEnabled));
   document.querySelectorAll('[data-theme-choice]').forEach(btn=>btn.addEventListener('click',()=>setTheme(btn.dataset.themeChoice)));
   $('customAccent').addEventListener('input',event=>setAccent(event.target.value,true));
