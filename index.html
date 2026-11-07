@@ -500,7 +500,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
               <div class="field-group">
                 <label class="field-label" for="imagePrompt">Image description</label>
                 <textarea class="create-prompt" id="imagePrompt" maxlength="1500" required placeholder="A peaceful modern house surrounded by tropical gardens at golden hour, cinematic photography..."></textarea>
-                <span class="field-hint">Be clear about the subject, setting, lighting and visual details. Keep your description under 1,500 characters.</span>
+                <span class="field-hint">Be clear about the subject, setting, lighting and visual details. Keep your description under 1,500 characters. Daily image use is limited, and shares Cloudflare's free AI allowance with chat and audio.</span>
               </div>
               <div class="create-controls">
                 <div class="field-group">
@@ -1834,7 +1834,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   $('cancelChatSelection').addEventListener('click',exitBulkDelete);
   $('aboutButton').addEventListener('click',about);
   $('openSettings').addEventListener('click',()=>showView('settings'));
-  $('settingsButton').addEventListener('click',()=>{ if(currentView==='settings'){showView('chat');renderChat();} else showView('settings'); });
+  $('settingsButton').addEventListener('click',()=>{ if(currentView!=='chat'){showView('chat');renderChat();} else showView('settings'); });
   $('themeButton').addEventListener('click',()=>{
     const isLight=document.body.classList.contains('light');
     setTheme(isLight?'dark':'light');
