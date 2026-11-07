@@ -440,6 +440,49 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
 .camera-use { margin-left:auto; border-color:var(--accent); background:var(--accent); color:#fff; }
 @media(max-width:520px) { .camera-overlay { padding:0; align-items:stretch; } .camera-panel { width:100%; max-height:100dvh; height:100dvh; border:0; border-radius:0; justify-content:center; } .camera-view { max-height:62dvh; } .camera-controls { padding-bottom:max(15px,env(safe-area-inset-bottom)); } }
 
+
+/* Accent-coloured image creation animation */
+.image-creating-row { width:100%; gap:8px; }
+.image-creating-card {
+  width:min(100%,440px); display:flex; align-items:center; gap:15px; padding:13px 15px;
+  overflow:hidden; border:1px solid color-mix(in srgb,var(--accent) 36%,var(--border));
+  border-radius:17px; background:linear-gradient(125deg,color-mix(in srgb,var(--accent) 11%,var(--panel)),var(--panel) 72%);
+  box-shadow:0 10px 34px color-mix(in srgb,var(--accent) 12%,transparent);
+}
+.image-creating-art {
+  position:relative; width:78px; height:78px; flex:none; display:grid; place-items:center;
+  border-radius:22px; background:radial-gradient(circle,color-mix(in srgb,var(--accent) 22%,transparent),transparent 70%);
+}
+.image-creating-halo { position:absolute; inset:2px; border-radius:50%; background:radial-gradient(circle,color-mix(in srgb,var(--accent) 24%,transparent),transparent 68%); animation:image-halo 2.5s ease-in-out infinite; }
+.image-creating-ring { position:absolute; inset:5px; border:1px solid color-mix(in srgb,var(--accent) 52%,transparent); border-top-color:var(--accent); border-right-color:color-mix(in srgb,var(--accent) 16%,transparent); border-radius:50%; animation:image-ring-spin 3.2s linear infinite; }
+.image-creating-ring::after { content:""; position:absolute; top:7px; right:3px; width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 12px var(--accent); }
+.image-creating-frame {
+  position:relative; z-index:1; width:43px; height:43px; display:grid; place-items:center;
+  border:1px solid color-mix(in srgb,var(--accent) 58%,var(--border)); border-radius:13px;
+  background:color-mix(in srgb,var(--accent) 15%,var(--panel)); color:var(--accent);
+  box-shadow:0 0 22px color-mix(in srgb,var(--accent) 23%,transparent); animation:image-frame-float 2.2s ease-in-out infinite;
+}
+.image-creating-frame svg { width:25px; height:25px; }
+.image-creating-spark { position:absolute; z-index:2; color:var(--accent); font-size:17px; text-shadow:0 0 12px var(--accent); animation:image-sparkle 1.7s ease-in-out infinite; }
+.image-creating-spark.one { top:1px; right:10px; }
+.image-creating-spark.two { bottom:4px; left:5px; font-size:12px; animation-delay:.65s; }
+.image-creating-copy { min-width:0; flex:1; display:flex; flex-direction:column; gap:6px; }
+.image-creating-title { color:var(--text); font-size:13px; font-weight:800; letter-spacing:.1px; }
+.image-creating-title::after { content:""; display:inline-block; width:18px; text-align:left; animation:image-loading-dots 1.35s steps(4,end) infinite; }
+.image-creating-caption { color:var(--muted); font-size:11px; line-height:1.45; }
+.image-creating-progress { position:relative; width:100%; height:3px; margin-top:3px; overflow:hidden; border-radius:10px; background:color-mix(in srgb,var(--accent) 15%,var(--border)); }
+.image-creating-progress::after { content:""; position:absolute; top:0; bottom:0; left:-38%; width:38%; border-radius:10px; background:linear-gradient(90deg,transparent,var(--accent),color-mix(in srgb,var(--accent) 45%,white)); box-shadow:0 0 10px var(--accent); animation:image-progress-sweep 1.65s ease-in-out infinite; }
+@keyframes image-ring-spin { to { transform:rotate(360deg); } }
+@keyframes image-halo { 50% { transform:scale(1.13); opacity:.62; } }
+@keyframes image-frame-float { 50% { transform:translateY(-3px) rotate(-3deg); } }
+@keyframes image-sparkle { 0%,100% { transform:scale(.65) rotate(0); opacity:.35; } 50% { transform:scale(1.18) rotate(35deg); opacity:1; } }
+@keyframes image-loading-dots { 0% { content:""; } 25% { content:"."; } 50% { content:".."; } 75%,100% { content:"..."; } }
+@keyframes image-progress-sweep { 0% { left:-38%; } 100% { left:110%; } }
+@media(prefers-reduced-motion:reduce) {
+  .image-creating-halo,.image-creating-ring,.image-creating-frame,.image-creating-spark,.image-creating-title::after,.image-creating-progress::after { animation:none; }
+  .image-creating-progress::after { left:30%; width:40%; }
+}
+
 </style>
 </head>
 <body>
@@ -1636,12 +1679,28 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       return {name:file.name,size:file.size,type:file.type,kind,preview};
     }));
   }
-  function setImageGenerationMode(enabled) {
+  function setImageGenerationMode(enabled,announce=true) {
     imageGenerationMode=!!enabled;
     $('imageGenToggle').classList.toggle('active',imageGenerationMode);
     $('imageGenToggle').setAttribute('aria-pressed',String(imageGenerationMode));
     $('prompt').placeholder=imageGenerationMode?'Describe the image to create, or attach a photo and describe how to edit it…':'Message GOZIE AI';
-    if(imageGenerationMode) notify('Image mode on. Attach a photo to edit it, or just describe an image to create.');
+    if(imageGenerationMode && announce) notify('Image mode on. Attach a photo to edit it, or just describe an image to create.');
+  }
+  function isImageGenerationRequest(text,files=[]) {
+    const value=String(text||'').trim().toLowerCase();
+    if(!value) return false;
+    const asksForPrompt=/\b(?:write|craft|improve|refine|rewrite|suggest|give|help me write)\b.{0,55}\bprompt\b/.test(value)
+      || /\bprompt\b.{0,45}\b(?:for|to create|to generate)\b/.test(value);
+    if(asksForPrompt) return false;
+    const asksForExplanation=/\b(?:explain|teach me|what is|what does|how do i|how can i|how does|steps to|guide me through)\b.{0,80}\b(?:image generation|generate an? image|create an? image|making images)\b/.test(value);
+    if(asksForExplanation) return false;
+    const directAction=/\b(?:generate|create|make|draw|paint|design|render|illustrate|produce|show me)\b/.test(value);
+    const visualAsset=/\b(?:images?|pictures?|photos?|photographs?|illustrations?|artworks?|portraits?|wallpapers?|logos?|posters?|banners?|thumbnails?|icons?|covers?|graphics?|memes?|stickers?|avatars?|infographics?|backgrounds?|scenes?|flyers?|mockups?|diagrams?|concept art|comic panels?)\b/.test(value);
+    if(directAction && visualAsset) return true;
+    const hasPhoto=(files||[]).some(file=>String(file?.type||'').startsWith('image/'));
+    const editAction=/\b(?:edit|modify|change|transform|restyle|retouch|enhance|remove|replace|add|erase|blur|sharpen|crop|recolour|recolor)\b/.test(value);
+    const refersToPhoto=/\b(?:this|that|my|the|attached|uploaded|photo|image|picture|background|it)\b/.test(value);
+    return hasPhoto && editAction && refersToPhoto;
   }
   async function resizeImageForEditing(file) {
     const bitmap=await createImageBitmap(file);
@@ -1673,6 +1732,25 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     const url=URL.createObjectURL(blob); const link=document.createElement('a'); link.href=url; link.download='gozie-ai-image.jpg';
     document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),3000);
   }
+  function showImageCreationIndicator(editing=false) {
+    const row=document.createElement('div');
+    row.className='message-row assistant image-creating-row';
+    const role=document.createElement('div');
+    role.className='message-role';
+    role.textContent='Gozie AI';
+    const card=document.createElement('div');
+    card.className='image-creating-card';
+    card.setAttribute('role','status');
+    card.setAttribute('aria-live','polite');
+    card.setAttribute('aria-atomic','true');
+    card.innerHTML='<div class="image-creating-art" aria-hidden="true"><div class="image-creating-halo"></div><div class="image-creating-ring"></div><div class="image-creating-frame"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div><span class="image-creating-spark one">✦</span><span class="image-creating-spark two">✧</span></div><div class="image-creating-copy"><strong class="image-creating-title">Creating image</strong><span class="image-creating-caption"></span><div class="image-creating-progress"></div></div>';
+    card.querySelector('.image-creating-caption').textContent=editing?'Applying your changes to the photo…':'Composing the details and bringing your idea to life…';
+    row.append(role,card);
+    $('thread').appendChild(row);
+    $('messages').scrollTop=$('messages').scrollHeight;
+    return row;
+  }
+
   async function generateImageInChat(promptText,files,metadata) {
     if(!currentUser || !currentUser.emailVerified) { setImageGenerationMode(false); notify('Sign in with your verified Gozie AI account to create or edit images.'); openAuth(); return; }
     const photos=files.filter(file=>file.type.startsWith('image/'));
@@ -1682,6 +1760,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     addMessage('user',promptText,metadata);
     clearPendingAttachments(); $('prompt').value=''; resizePrompt();
     busy=true; setSending(true);
+    const loadingIndicator=showImageCreationIndicator(photos.length>0);
     try {
       const token=await getGozieAuthToken(); let response;
       if(photos.length) {
@@ -1703,6 +1782,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       console.error('Gozie AI image request failed:',error);
       addMessage('assistant',error.message||'Image creation failed. Please try again.');
     } finally {
+      loadingIndicator.remove();
       busy=false; setSending(false); setImageGenerationMode(false); $('prompt').focus();
     }
   }
@@ -1733,7 +1813,12 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       return;
     }
     if(preparingVideo) { busy=false; setSending(false); }
-    if(imageGenerationMode && editIndex===null) { await generateImageInChat(promptText,attachments,attachmentMetadata); return; }
+    const autoImageRequest=editIndex===null && isImageGenerationRequest(promptText,attachments);
+    if(editIndex===null && (imageGenerationMode || autoImageRequest)) {
+      if(autoImageRequest) setImageGenerationMode(true,false);
+      await generateImageInChat(promptText,attachments,attachmentMetadata);
+      return;
+    }
     const messageContent=finalPrompt;
     if(editIndex===null) {
       if(!currentChat()) { const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(chat); currentId=chat.id; }
@@ -1884,6 +1969,8 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   let voiceStopRequested=false;
   let voiceSilenceTimer=null;
   let voiceBaseText='';
+  let voiceCommittedText='';
+  let voiceSessionResults=[];
   function setVoiceStatus(message,show=true) {
     $('voiceStatus').textContent=message;
     $('voiceStatus').hidden=!show;
@@ -1898,10 +1985,22 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     if(voiceSilenceTimer) clearTimeout(voiceSilenceTimer);
     voiceSilenceTimer=null;
   }
+  function updateVoiceDraft() {
+    const sessionText=voiceSessionResults.map(result=>result?.transcript||'').filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
+    $('prompt').value=[voiceBaseText,voiceCommittedText,sessionText].map(value=>String(value||'').trim()).filter(Boolean).join(' ');
+    resizePrompt();
+  }
+  function commitVoiceSession() {
+    const finalText=voiceSessionResults.filter(result=>result?.isFinal).map(result=>result.transcript).filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
+    if(finalText) voiceCommittedText=[voiceCommittedText,finalText].filter(Boolean).join(' ');
+    voiceSessionResults=[];
+    updateVoiceDraft();
+  }
   function finishVoiceInput() {
     clearVoiceSilenceTimer();
     voiceListening=false; voiceRecognition=null; voiceStopRequested=false;
     setVoiceButtonState(false);
+    voiceSessionResults=[]; voiceCommittedText='';
     if($('prompt').value.trim()) setVoiceStatus('Voice input added. You can edit the text before sending.');
     else setVoiceStatus('',false);
   }
@@ -1932,8 +2031,9 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       const recognition=new Recognition();
       voiceRecognition=recognition;
       voiceStopRequested=false;
-      voiceBaseText=$('prompt').value.trimEnd();
-      if(voiceBaseText) voiceBaseText+=' ';
+      voiceBaseText=$('prompt').value.trim();
+      voiceCommittedText='';
+      voiceSessionResults=[];
       recognition.lang=navigator.language||'en-US';
       recognition.interimResults=true;
       recognition.continuous=true;
@@ -1944,21 +2044,21 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
         resetVoiceSilenceTimer(recognition);
       };
       recognition.onresult=event=>{
-        let finalText='',interimText='';
+        // SpeechRecognition.results contains earlier final results as well as the
+        // latest result. Rebuild this segment instead of appending it on every event.
+        const currentResults=[];
         for(let i=0;i<event.results.length;i++) {
-          const part=event.results[i][0]?.transcript||'';
-          if(event.results[i].isFinal) finalText+=part;
-          else interimText+=part;
+          currentResults.push({
+            transcript:event.results[i][0]?.transcript||'',
+            isFinal:!!event.results[i].isFinal
+          });
         }
-        $('prompt').value=voiceBaseText+(finalText+interimText).trim();
-        resizePrompt();
+        voiceSessionResults=currentResults;
+        updateVoiceDraft();
         resetVoiceSilenceTimer(recognition);
       };
       recognition.onerror=event=>{
-        if(event.error==='no-speech') {
-          // Keep the three-second silence timer in control of when listening ends.
-          return;
-        }
+        if(event.error==='no-speech') return;
         const messages={
           'not-allowed':'Microphone permission was denied. Allow microphone access in your browser settings.',
           'service-not-allowed':'Your browser blocked its speech-recognition service.',
@@ -1972,8 +2072,8 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       };
       recognition.onend=()=>{
         if(voiceListening && !voiceStopRequested && voiceRecognition===recognition) {
-          // Some browsers end a recognition segment on their own; resume while the
-          // silence timer is still active so the user can continue speaking.
+          // Commit the completed segment exactly once before a browser restart.
+          commitVoiceSession();
           try { recognition.start(); return; }
           catch(error) { console.warn('Voice input restart:',error); }
         }
@@ -1982,7 +2082,9 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       recognition.start();
     } catch(error) {
       clearVoiceSilenceTimer();
-      voiceRecognition=null; voiceListening=false; voiceStopRequested=false; setVoiceButtonState(false);
+      voiceRecognition=null; voiceListening=false; voiceStopRequested=false;
+      voiceSessionResults=[]; voiceCommittedText='';
+      setVoiceButtonState(false);
       notify('Could not start voice input. Check microphone permission and try again.');
     }
   }
