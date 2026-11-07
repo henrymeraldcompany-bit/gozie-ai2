@@ -120,6 +120,9 @@ button:disabled { opacity:.55; cursor:not-allowed; }
 .message-attachments { display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,180px)); gap:9px; width:min(92%,690px); max-width:690px; margin:0 0 2px; }
 .message-attachment-card { display:flex; flex-direction:column; align-items:stretch; gap:7px; width:100%; min-width:0; max-width:180px; padding:8px; border:1px solid var(--border); border-radius:12px; background:var(--panel); }
 .message-attachment-card img { display:block; width:100%; height:108px; object-fit:cover; border-radius:8px; background:var(--panel-2); }
+.generated-image-download { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; min-height:34px; padding:7px 9px; border:1px solid color-mix(in srgb,var(--accent) 42%,var(--border)); border-radius:9px; background:var(--accent-soft); color:var(--accent); font:600 11px/1.2 inherit; cursor:pointer; }
+.generated-image-download svg { width:15px; height:15px; flex:none; }
+.generated-image-download:active { transform:scale(.98); }
 .message-attachment-file-icon { width:100%; height:84px; display:grid; place-items:center; flex:none; border-radius:8px; background:var(--accent-soft); color:var(--accent); }
 .message-attachment-file-icon svg { width:28px; height:28px; }
 .message-attachment-info { display:flex; flex-direction:column; gap:4px; width:100%; min-width:0; }
@@ -963,6 +966,14 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
         const card=document.createElement('div'); card.className='message-attachment-card';
         if(item.preview) {
           const img=document.createElement('img'); img.src=item.preview; img.alt=item.kind==='videos'?'Video preview':(item.name||'Attached image'); card.appendChild(img);
+          if(!isUser && message.generatedImageKey) {
+            const downloadButton=document.createElement('button');
+            downloadButton.type='button';
+            downloadButton.className='generated-image-download';
+            downloadButton.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 20h16"/></svg><span>Download image</span>';
+            downloadButton.addEventListener('click',()=>downloadGeneratedChatImage(message.generatedImageKey));
+            card.appendChild(downloadButton);
+          }
         } else {
           const icon=document.createElement('div'); icon.className='message-attachment-file-icon';
           icon.innerHTML=item.kind==='audio'
@@ -988,7 +999,6 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
         createMessageAction('Copy',copyIcon,()=>copyMessage(message.content))
       );
     } else {
-      if(message.generatedImageKey && generatedImageBlobs.has(message.generatedImageKey)) actions.append(createMessageAction('Download image','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 20h16"/></svg>',()=>downloadGeneratedChatImage(message.generatedImageKey)));
       actions.append(
         createMessageAction(activeSpeechMessage===message?'Stop reading':'Read aloud',activeSpeechMessage===message?'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5l-5 4H4Z"/><path d="M17 9a5 5 0 0 1 0 6m2.5-9a9 9 0 0 1 0 12"/></svg>',()=>toggleMessageSpeech(message),activeSpeechMessage===message),
         createMessageAction('Copy',copyIcon,()=>copyMessage(message.content)),
