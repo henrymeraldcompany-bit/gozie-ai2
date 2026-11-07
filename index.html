@@ -117,6 +117,15 @@ button:disabled { opacity:.55; cursor:not-allowed; }
 .message-row.assistant .message-bubble { align-self:flex-start; }
 .message-bubble a { color:var(--accent); overflow-wrap:anywhere; }
 
+.message-attachments { display:flex; flex-wrap:wrap; gap:8px; max-width:min(92%,690px); margin:0 0 2px; }
+.message-attachment-card { display:flex; align-items:center; gap:9px; max-width:100%; min-width:150px; padding:7px; border:1px solid var(--border); border-radius:12px; background:var(--panel); }
+.message-attachment-card img { display:block; width:112px; height:86px; object-fit:cover; border-radius:8px; }
+.message-attachment-file-icon { width:38px; height:38px; display:grid; place-items:center; flex:none; border-radius:8px; background:var(--accent-soft); color:var(--accent); }
+.message-attachment-file-icon svg { width:19px; height:19px; }
+.message-attachment-info { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.message-attachment-name { max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; color:var(--text); }
+.message-attachment-size { color:var(--muted); font-size:10px; }
+.message-row.user .message-attachments { align-self:flex-end; justify-content:flex-end; }
 .message-bubble { white-space:normal; }
 .message-bubble p { margin:0 0 11px; }
 .message-bubble p:last-child { margin-bottom:0; }
@@ -887,6 +896,27 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     const row=document.createElement('div'); row.className='message-row '+(isUser?'user':'assistant');
     row.dataset.messageIndex=String(index);
     const role=document.createElement('div'); role.className='message-role'; role.textContent=isUser?'You':'Gozie AI';
+    const attachments=Array.isArray(message.attachments)?message.attachments:[];
+    if(isUser && attachments.length) {
+      const gallery=document.createElement('div'); gallery.className='message-attachments';
+      attachments.forEach(item=>{
+        const card=document.createElement('div'); card.className='message-attachment-card';
+        if(item.preview) {
+          const img=document.createElement('img'); img.src=item.preview; img.alt=item.name||'Attached image'; card.appendChild(img);
+        } else {
+          const icon=document.createElement('div'); icon.className='message-attachment-file-icon';
+          icon.innerHTML=item.kind==='audio'
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M13 2v7h7"/></svg>';
+          card.appendChild(icon);
+        }
+        const info=document.createElement('div'); info.className='message-attachment-info';
+        const name=document.createElement('span'); name.className='message-attachment-name'; name.textContent=item.name||'Attachment';
+        const size=document.createElement('span'); size.className='message-attachment-size'; size.textContent=readableFileSize(item.size||0);
+        info.append(name,size); card.appendChild(info); gallery.appendChild(card);
+      });
+      row.appendChild(gallery);
+    }
     const bubble=document.createElement('div'); bubble.className='message-bubble'; renderMarkdown(message.content || '',bubble);
     const actions=document.createElement('div'); actions.className='message-actions';
     const copyIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>';
@@ -1074,9 +1104,11 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     if(!confirm(`Delete ${count} selected conversation${count===1?'':'s'}? This cannot be undone.`))return;
     deleteChats([...selectedChatIds]);exitBulkDelete();
   }
-  function addMessage(role,content) {
+  function addMessage(role,content,attachments=[]) {
     let chat=currentChat(); if (!chat) { const created={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(created); currentId=created.id; chat=created; }
-    chat.messages.push({role,content:String(content)}); chat.updated=Date.now();
+    const message={role,content:String(content)};
+    if(attachments.length) message.attachments=attachments;
+    chat.messages.push(message); chat.updated=Date.now();
     if (chat.title==='New chat' && role==='user') chat.title=String(content).slice(0,38)+(String(content).length>38?'…':'');
     saveChats(); renderChat();
   }
@@ -1256,14 +1288,34 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     if(typeof content!=='string' || !content.trim()) throw new Error('Gozie AI server responded, but no assistant message was returned.');
     return content.trim();
   }
+  async function makeAttachmentMetadata(files) {
+    return Promise.all(files.map(async file=>{
+      const kind=file.type.startsWith('image/')?'photos':file.type.startsWith('audio/')?'audio':'files';
+      let preview=null;
+      if(kind==='photos') {
+        try {
+          const bitmap=await createImageBitmap(file);
+          const scale=Math.min(1,240/Math.max(bitmap.width,bitmap.height));
+          const canvas=document.createElement('canvas');
+          canvas.width=Math.max(1,Math.round(bitmap.width*scale));
+          canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+          canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+          preview=canvas.toDataURL('image/jpeg',0.62);
+          bitmap.close?.();
+        } catch(error) { console.warn('Could not create attachment thumbnail:',error); }
+      }
+      return {name:file.name,size:file.size,type:file.type,kind,preview};
+    }));
+  }
   async function sendMessage(text,editIndex=null,attachments=[]) {
     if(busy) return; const promptText=String(text||'').trim();
     if(!promptText && !attachments.length) return;
     const finalPrompt=promptText || (attachments.length?'Please examine the attached item(s) and help me understand them.':'');
-    const messageContent=attachments.length ? finalPrompt+'\n\nAttached: '+attachments.map(file=>file.name).join(', ') : finalPrompt;
+    const attachmentMetadata=attachments.length ? await makeAttachmentMetadata(attachments) : [];
+    const messageContent=finalPrompt;
     if(editIndex===null) {
       if(!currentChat()) { const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(chat); currentId=chat.id; }
-      addMessage('user',messageContent);
+      addMessage('user',messageContent,attachmentMetadata);
       if(attachments.length) clearPendingAttachments();
     } else {
       const chat=currentChat(); const original=chat?.messages[editIndex];
