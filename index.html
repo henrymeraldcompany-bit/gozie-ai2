@@ -925,7 +925,13 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     if(startupChatReady) return;
     startupChatReady=true;
     restoreCurrentChat();
-    if(!currentId) {
+    // Prefer an existing blank New chat over the previously active older conversation.
+    const pendingNewChat=chats.find(chat =>
+      (chat.title||'').trim().toLocaleLowerCase()==='new chat' &&
+      Array.isArray(chat.messages) && chat.messages.length===0
+    );
+    if(pendingNewChat) currentId=pendingNewChat.id;
+    else if(!currentId) {
       const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()};
       chats.unshift(chat); currentId=chat.id; saveChats();
     }
