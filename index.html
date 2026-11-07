@@ -1692,7 +1692,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     const asksForPrompt=/\b(?:write|craft|improve|refine|rewrite|suggest|give|help me write)\b.{0,55}\bprompt\b/.test(value)
       || /\bprompt\b.{0,45}\b(?:for|to create|to generate)\b/.test(value);
     if(asksForPrompt) return false;
-    const asksForExplanation=/\b(?:explain|teach me|what is|what does|how do i|how can i|how does|how to|steps to|guide me through|tell me about)\b.{0,120}\b(?:generat\\w*|creat\\w*|mak(?:e|ing)|draw\\w*|paint\\w*|design\\w*|render\\w*|edit\\w*|modify\\w*|transform\\w*)\b.{0,60}\b(?:images?|pictures?|photos?|illustrations?|artworks?|portraits?|wallpapers?|logos?|posters?|banners?|graphics?|avatars?|backgrounds?|diagrams?|concept art)\b/.test(value)
+    const asksForExplanation=/\b(?:explain|teach me|what is|what does|how do i|how can i|how does|how to|steps to|guide me through|tell me about)\b.{0,120}\b(?:generat\w*|creat\w*|mak(?:e|ing)|draw\w*|paint\w*|design\w*|render\w*|edit\w*|modify\w*|transform\w*)\b.{0,60}\b(?:images?|pictures?|photos?|illustrations?|artworks?|portraits?|wallpapers?|logos?|posters?|banners?|graphics?|avatars?|backgrounds?|diagrams?|concept art)\b/.test(value)
       || /\b(?:what is|tell me about)\b.{0,60}\bimage generation\b/.test(value);
     if(asksForExplanation) return false;
     const directAction=/\b(?:generate|create|make|draw|paint|design|render|illustrate|produce|show me)\b/.test(value);
