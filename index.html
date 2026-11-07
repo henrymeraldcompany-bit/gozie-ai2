@@ -400,6 +400,46 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   .tool-toggle { gap:4px; padding:5px 5px; }
   .web-search-toggle { font-size:9.5px; gap:4px; }
   }
+
+/* In-app camera */
+.camera-overlay { position:fixed; inset:0; z-index:120; display:flex; align-items:center; justify-content:center; padding:14px; background:rgba(0,0,0,.82); backdrop-filter:blur(10px); }
+.camera-overlay[hidden] { display:none; }
+.camera-panel { width:min(100%,620px); max-height:min(94dvh,900px); display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--border); border-radius:20px; background:var(--panel); box-shadow:0 24px 80px rgba(0,0,0,.5); }
+.camera-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 16px; }
+.camera-header div { display:flex; flex-direction:column; gap:3px; }
+.camera-header strong { font-size:14px; }
+.camera-header span { color:var(--muted); font-size:11px; }
+.camera-icon-btn { width:36px; height:36px; border:0; border-radius:50%; background:var(--panel-3); font-size:25px; line-height:1; cursor:pointer; }
+.camera-view { position:relative; width:100%; aspect-ratio:4/3; max-height:58dvh; overflow:hidden; background:#080808; }
+.camera-view video,.camera-view img { width:100%; height:100%; display:block; object-fit:contain; }
+.camera-view video.mirrored { transform:scaleX(-1); }
+.camera-grid { position:absolute; inset:0; pointer-events:none; background-image:linear-gradient(to right,transparent 33.1%,rgba(255,255,255,.55) 33.3%,transparent 33.6%,transparent 66.4%,rgba(255,255,255,.55) 66.7%,transparent 67%),linear-gradient(to bottom,transparent 33.1%,rgba(255,255,255,.55) 33.3%,transparent 33.6%,transparent 66.4%,rgba(255,255,255,.55) 66.7%,transparent 67%); }
+.camera-view-label { position:absolute; top:10px; left:10px; padding:5px 8px; border-radius:20px; background:rgba(0,0,0,.48); color:white; font-size:9px; font-weight:800; letter-spacing:.8px; }
+.camera-countdown { position:absolute; inset:0; display:grid; place-items:center; color:#fff; font-size:76px; font-weight:800; text-shadow:0 3px 22px #000; background:rgba(0,0,0,.15); }
+.camera-flash { position:absolute; inset:0; pointer-events:none; background:#fff; opacity:0; }
+.camera-flash.fire { animation:camera-flash .24s ease-out; }
+@keyframes camera-flash { 0%{opacity:.95} 100%{opacity:0} }
+.camera-controls { padding:12px 15px 15px; }
+.camera-tools-row { display:flex; align-items:center; justify-content:space-around; gap:8px; }
+.camera-tool { min-width:52px; display:flex; flex-direction:column; align-items:center; gap:3px; border:0; border-radius:10px; padding:6px 8px; background:transparent; color:var(--text); cursor:pointer; }
+.camera-tool>span { font-size:21px; line-height:1.1; }
+.camera-tool small { color:var(--muted); font-size:10px; }
+.camera-tool.active { background:var(--accent-soft); color:var(--accent); }
+.camera-timer-wrap { display:flex; align-items:center; gap:6px; color:var(--muted); font-size:11px; }
+.camera-timer-wrap select { max-width:78px; padding:7px 5px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-size:11px; }
+.camera-zoom-row { display:flex; align-items:center; gap:10px; margin:9px 2px 13px; color:var(--muted); font-size:12px; }
+.camera-zoom-row input { flex:1; min-width:0; accent-color:var(--accent); }
+.camera-zoom-row strong { min-width:32px; color:var(--text); font-size:11px; text-align:right; }
+.camera-bottom-row { min-height:58px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.camera-hint { flex:1; color:var(--muted); font-size:10px; }
+.camera-hint-right { text-align:right; }
+.camera-shutter { width:58px; height:58px; display:grid; place-items:center; flex:none; border:3px solid var(--text); border-radius:50%; background:transparent; cursor:pointer; }
+.camera-shutter span { width:42px; height:42px; border-radius:50%; background:var(--text); }
+.camera-shutter:active span { transform:scale(.88); }
+.camera-secondary,.camera-use { min-height:42px; padding:0 18px; border:1px solid var(--border); border-radius:11px; background:var(--panel-3); font-size:12px; font-weight:700; cursor:pointer; }
+.camera-use { margin-left:auto; border-color:var(--accent); background:var(--accent); color:#fff; }
+@media(max-width:520px) { .camera-overlay { padding:0; align-items:stretch; } .camera-panel { width:100%; max-height:100dvh; height:100dvh; border:0; border-radius:0; justify-content:center; } .camera-view { max-height:62dvh; } .camera-controls { padding-bottom:max(15px,env(safe-area-inset-bottom)); } }
+
 </style>
 </head>
 <body>
@@ -460,6 +500,10 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
           </form>
           <div class="attachment-menu" id="attachmentMenu" role="menu" aria-label="Add an attachment" hidden>
             <div class="attachment-menu-title">Add to your message</div>
+            <button class="attachment-option" type="button" data-attachment-kind="camera" role="menuitem">
+              <span class="attachment-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h-4l-2 3H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2-3Z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+              <span class="attachment-option-copy"><strong>Camera</strong><small>Take a live photo with Gozie AI</small></span>
+            </button>
             <button class="attachment-option" type="button" data-attachment-kind="photos" role="menuitem">
               <span class="attachment-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>
               <span class="attachment-option-copy"><strong>Photos</strong><small>Add images for Gozie AI to examine</small></span>
@@ -477,6 +521,42 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
               <span class="attachment-option-copy"><strong>Video</strong><small>Let Gozie AI examine key moments in a clip</small></span>
             </button>
           </div>
+
+          <section class="camera-overlay" id="cameraOverlay" aria-label="Camera" aria-modal="true" role="dialog" hidden>
+            <div class="camera-panel">
+              <header class="camera-header">
+                <div><strong>Camera</strong><span id="cameraStatus">Preparing camera…</span></div>
+                <button class="camera-icon-btn" id="cameraClose" type="button" aria-label="Close camera">×</button>
+              </header>
+              <div class="camera-view">
+                <video id="cameraVideo" autoplay muted playsinline></video>
+                <img id="cameraCapturedPreview" alt="Captured photo preview" hidden>
+                <div class="camera-grid" id="cameraGrid" hidden><i></i><i></i></div>
+                <div class="camera-countdown" id="cameraCountdown" hidden></div>
+                <div class="camera-flash" id="cameraFlash"></div>
+                <div class="camera-view-label" id="cameraViewLabel">REAR CAMERA</div>
+              </div>
+              <div class="camera-controls">
+                <div class="camera-tools-row">
+                  <button class="camera-tool" id="cameraSwitch" type="button" title="Switch front or rear camera"><span>⇄</span><small>Flip</small></button>
+                  <button class="camera-tool" id="cameraTorch" type="button" title="Toggle flashlight" disabled><span>ϟ</span><small>Flash</small></button>
+                  <button class="camera-tool" id="cameraGridToggle" type="button" title="Toggle composition grid" aria-pressed="false"><span>▦</span><small>Grid</small></button>
+                  <label class="camera-timer-wrap"><span>Timer</span><select id="cameraTimer" aria-label="Capture timer"><option value="0">Off</option><option value="3">3 sec</option><option value="5">5 sec</option><option value="10">10 sec</option></select></label>
+                </div>
+                <div class="camera-zoom-row"><span>−</span><input id="cameraZoom" type="range" min="1" max="1" step="0.1" value="1" disabled aria-label="Camera zoom"><strong id="cameraZoomValue">1×</strong><span>+</span></div>
+                <div class="camera-bottom-row" id="cameraLiveActions">
+                  <span class="camera-hint">Keep your subject in the frame</span>
+                  <button class="camera-shutter" id="cameraCapture" type="button" aria-label="Take photo"><span></span></button>
+                  <span class="camera-hint camera-hint-right">Photo</span>
+                </div>
+                <div class="camera-bottom-row" id="cameraReviewActions" hidden>
+                  <button class="camera-secondary" id="cameraRetake" type="button">Retake</button>
+                  <button class="camera-use" id="cameraUsePhoto" type="button">Use photo</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <input id="photoPicker" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
           <input id="filePicker" type="file" accept=".pdf,.docx,.xlsx,.xlsm,.xlsb,.xls,.csv,.txt,.md,.html,.htm,.xml" multiple hidden>
           <input id="audioPicker" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.webm,.flac" multiple hidden>
@@ -1694,6 +1774,110 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     $('attachmentButton').disabled=value; $('voiceInputButton').disabled=value; $('webSearchToggle').disabled=value; $('imageGenToggle').disabled=value;
     $('sendButton').innerHTML=value?'<span class="spinner"></span>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m-7 7 7-7 7 7"/></svg>';
   }
+
+  let cameraStream=null, cameraFacing='environment', cameraTrack=null, cameraZoomMin=1, cameraZoomMax=1, cameraZoomStep=.1, cameraTorchOn=false, cameraCapturedBlob=null, cameraTimerHandle=null, cameraCountdownHandle=null;
+  function setCameraStatus(message) { $('cameraStatus').textContent=message; }
+  function stopCameraStream() {
+    if(cameraStream) cameraStream.getTracks().forEach(track=>track.stop());
+    cameraStream=null; cameraTrack=null; cameraTorchOn=false;
+    if($('cameraVideo')) $('cameraVideo').srcObject=null;
+  }
+  function closeCamera() {
+    if(cameraTimerHandle) clearTimeout(cameraTimerHandle);
+    if(cameraCountdownHandle) clearInterval(cameraCountdownHandle);
+    cameraTimerHandle=null; cameraCountdownHandle=null;
+    stopCameraStream(); cameraCapturedBlob=null;
+    $('cameraOverlay').hidden=true; $('cameraCapturedPreview').hidden=true; $('cameraVideo').hidden=false;
+    $('cameraCountdown').hidden=true; $('cameraGrid').hidden=true; $('cameraGridToggle').classList.remove('active'); $('cameraGridToggle').setAttribute('aria-pressed','false');
+    $('cameraTorch').classList.remove('active'); $('cameraTorch').disabled=true;
+    $('cameraZoom').disabled=true; $('cameraZoom').value='1'; $('cameraZoomValue').textContent='1×';
+    $('cameraLiveActions').hidden=false; $('cameraReviewActions').hidden=true;
+  }
+  async function startCameraStream() {
+    stopCameraStream(); setCameraStatus('Requesting camera access…');
+    $('cameraTorch').disabled=true; $('cameraZoom').disabled=true; $('cameraTorch').classList.remove('active');
+    try {
+      const constraints={audio:false,video:{facingMode:{ideal:cameraFacing},width:{ideal:1920},height:{ideal:1080}}};
+      cameraStream=await navigator.mediaDevices.getUserMedia(constraints);
+      const video=$('cameraVideo'); video.srcObject=cameraStream; video.classList.toggle('mirrored',cameraFacing==='user');
+      await video.play();
+      cameraTrack=cameraStream.getVideoTracks()[0];
+      const caps= cameraTrack.getCapabilities ? cameraTrack.getCapabilities() : {};
+      const settings=cameraTrack.getSettings ? cameraTrack.getSettings() : {};
+      cameraZoomMin=Number(caps.zoom?.min||1); cameraZoomMax=Number(caps.zoom?.max||1); cameraZoomStep=Number(caps.zoom?.step||.1);
+      const zoom=$('cameraZoom'); zoom.min=String(cameraZoomMin); zoom.max=String(cameraZoomMax); zoom.step=String(cameraZoomStep); zoom.value=String(settings.zoom||cameraZoomMin); zoom.disabled=!(cameraZoomMax>cameraZoomMin);
+      $('cameraZoomValue').textContent=(Number(zoom.value)||1).toFixed(1).replace(/\.0$/,'')+'×';
+      $('cameraTorch').disabled=!caps.torch;
+      $('cameraSwitch').disabled=false;
+      $('cameraViewLabel').textContent=cameraFacing==='user'?'FRONT CAMERA':'REAR CAMERA';
+      setCameraStatus((settings.width||video.videoWidth)+' × '+(settings.height||video.videoHeight));
+    } catch(error) {
+      stopCameraStream();
+      const msg=error.name==='NotAllowedError'?'Camera permission was denied. Allow camera access in your browser settings and try again.':error.name==='NotFoundError'?'No camera was found on this device.':error.name==='NotReadableError'?'The camera is busy in another app. Close it and try again.':'Could not start the camera. Make sure this page is open over HTTPS and your browser supports camera access.';
+      setCameraStatus(msg); notify(msg); $('cameraSwitch').disabled=false;
+    }
+  }
+  async function openCamera() {
+    closeAttachmentMenu(); $('cameraOverlay').hidden=false; $('cameraCapturedPreview').hidden=true; $('cameraVideo').hidden=false;
+    $('cameraLiveActions').hidden=false; $('cameraReviewActions').hidden=true; cameraFacing='environment';
+    if(!navigator.mediaDevices?.getUserMedia) { setCameraStatus('Camera access is not available in this browser. Open Gozie AI over HTTPS in a supported browser.'); return; }
+    await startCameraStream(); $('cameraClose').focus();
+  }
+  async function switchCamera() {
+    if(!cameraStream) return;
+    cameraFacing=cameraFacing==='environment'?'user':'environment';
+    await startCameraStream();
+  }
+  async function setCameraZoom(value) {
+    if(!cameraTrack) return;
+    const zoomValue=Number(value);
+    $('cameraZoomValue').textContent=zoomValue.toFixed(1).replace(/\.0$/,'')+'×';
+    try { await cameraTrack.applyConstraints({advanced:[{zoom:zoomValue}]}); }
+    catch(error) { setCameraStatus('Zoom is not supported by this camera.'); }
+  }
+  async function toggleCameraTorch() {
+    if(!cameraTrack) return;
+    try {
+      cameraTorchOn=!cameraTorchOn;
+      await cameraTrack.applyConstraints({advanced:[{torch:cameraTorchOn}]});
+      $('cameraTorch').classList.toggle('active',cameraTorchOn);
+      setCameraStatus(cameraTorchOn?'Flashlight on':'Flashlight off');
+    } catch(error) { cameraTorchOn=false; $('cameraTorch').classList.remove('active'); notify('Flashlight is not supported by this camera.'); }
+  }
+  async function captureCameraPhoto() {
+    if(!cameraStream || !$('cameraVideo').videoWidth) { notify('Wait for the camera preview to become ready.'); return; }
+    const video=$('cameraVideo'), canvas=document.createElement('canvas');
+    canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+    const ctx=canvas.getContext('2d');
+    if(cameraFacing==='user') { ctx.translate(canvas.width,0); ctx.scale(-1,1); }
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    cameraCapturedBlob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.92));
+    if(!cameraCapturedBlob) { notify('Could not capture the photo. Please try again.'); return; }
+    $('cameraCapturedPreview').src=URL.createObjectURL(cameraCapturedBlob);
+    $('cameraCapturedPreview').hidden=false; video.hidden=true;
+    $('cameraLiveActions').hidden=true; $('cameraReviewActions').hidden=false;
+    $('cameraCountdown').hidden=true;
+    $('cameraFlash').classList.remove('fire'); void $('cameraFlash').offsetWidth; $('cameraFlash').classList.add('fire');
+    setCameraStatus(canvas.width+' × '+canvas.height+' · Ready to use');
+  }
+  function triggerCameraCapture() {
+    const seconds=Number($('cameraTimer').value)||0;
+    if(!seconds) { captureCameraPhoto(); return; }
+    let remaining=seconds; $('cameraCountdown').textContent=String(remaining); $('cameraCountdown').hidden=false;
+    cameraCountdownHandle=setInterval(()=>{remaining--; if(remaining>0) $('cameraCountdown').textContent=String(remaining); else {clearInterval(cameraCountdownHandle);cameraCountdownHandle=null;captureCameraPhoto();}},1000);
+  }
+  function retakeCameraPhoto() {
+    if($('cameraCapturedPreview').src) URL.revokeObjectURL($('cameraCapturedPreview').src);
+    $('cameraCapturedPreview').removeAttribute('src'); $('cameraCapturedPreview').hidden=true; $('cameraVideo').hidden=false;
+    $('cameraLiveActions').hidden=false; $('cameraReviewActions').hidden=true; cameraCapturedBlob=null;
+    setCameraStatus('Ready');
+  }
+  function useCameraPhoto() {
+    if(!cameraCapturedBlob) return;
+    const file=new File([cameraCapturedBlob],'gozie-camera-'+new Date().toISOString().replace(/[:.]/g,'-')+'.jpg',{type:'image/jpeg',lastModified:Date.now()});
+    closeCamera(); addPickedFiles([file],'photos'); $('prompt').focus();
+  }
+
   function resizePrompt() { const input=$('prompt'); input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,145)+'px'; }
   let voiceRecognition=null;
   let voiceListening=false;
@@ -1887,8 +2071,21 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   });
   $('attachmentButton').addEventListener('click',toggleAttachmentMenu);
   $('attachmentMenu').querySelectorAll('[data-attachment-kind]').forEach(button=>{
-    button.addEventListener('click',()=>openAttachmentPicker(button.dataset.attachmentKind));
+    button.addEventListener('click',()=>button.dataset.attachmentKind==='camera'?openCamera():openAttachmentPicker(button.dataset.attachmentKind));
   });
+  $('cameraClose').addEventListener('click',closeCamera);
+  $('cameraSwitch').addEventListener('click',switchCamera);
+  $('cameraTorch').addEventListener('click',toggleCameraTorch);
+  $('cameraGridToggle').addEventListener('click',()=>{
+    const enabled=$('cameraGrid').hidden; $('cameraGrid').hidden=!enabled;
+    $('cameraGridToggle').classList.toggle('active',enabled); $('cameraGridToggle').setAttribute('aria-pressed',String(enabled));
+  });
+  $('cameraZoom').addEventListener('input',event=>setCameraZoom(event.target.value));
+  $('cameraCapture').addEventListener('click',triggerCameraCapture);
+  $('cameraRetake').addEventListener('click',retakeCameraPhoto);
+  $('cameraUsePhoto').addEventListener('click',useCameraPhoto);
+  $('cameraOverlay').addEventListener('click',event=>{if(event.target===$('cameraOverlay'))closeCamera();});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('cameraOverlay').hidden)closeCamera();});
   $('photoPicker').addEventListener('change',event=>{addPickedFiles(event.target.files,'photos');event.target.value='';});
   $('filePicker').addEventListener('change',event=>{addPickedFiles(event.target.files,'files');event.target.value='';});
   $('audioPicker').addEventListener('change',event=>{addPickedFiles(event.target.files,'audio');event.target.value='';});
