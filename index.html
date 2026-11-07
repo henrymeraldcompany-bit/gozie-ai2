@@ -166,6 +166,32 @@ button:disabled { opacity:.55; cursor:not-allowed; }
 .composer-area { flex:none; padding:10px 20px calc(10px + env(safe-area-inset-bottom)); background:linear-gradient(180deg,transparent 0%,var(--bg) 22%); }
 .composer-wrap { width:min(100%,760px); margin:0 auto; }
 .composer { padding:10px 11px 8px; border:1px solid var(--border); border-radius:17px; background:var(--panel); box-shadow:0 5px 24px rgba(0,0,0,.08); }
+.composer-wrap { position:relative; }
+.attachment-preview { display:flex; gap:8px; overflow-x:auto; padding:2px 2px 10px; scrollbar-width:thin; }
+.attachment-preview[hidden] { display:none !important; }
+.attachment-chip { position:relative; display:flex; align-items:center; gap:8px; flex:none; max-width:205px; min-width:115px; padding:7px 28px 7px 8px; border:1px solid var(--border); border-radius:11px; background:var(--panel-2); }
+.attachment-thumb { width:38px; height:38px; flex:none; display:grid; place-items:center; overflow:hidden; border-radius:7px; background:var(--panel-3); color:var(--muted); }
+.attachment-thumb img { width:100%; height:100%; object-fit:cover; }
+.attachment-thumb svg { width:20px; height:20px; }
+.attachment-meta { min-width:0; display:flex; flex-direction:column; gap:3px; }
+.attachment-name { max-width:125px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); font-size:11px; }
+.attachment-size { color:var(--muted); font-size:10px; }
+.attachment-remove { position:absolute; top:4px; right:4px; width:20px; height:20px; display:grid; place-items:center; padding:0; border:0; border-radius:50%; background:var(--panel-3); color:var(--muted); cursor:pointer; }
+.attachment-remove svg { width:12px; height:12px; }
+.attach-btn { width:39px; height:39px; flex:none; display:grid; place-items:center; border:1px solid var(--border); border-radius:12px; background:var(--panel-2); color:var(--muted); cursor:pointer; }
+.attach-btn:hover,.attach-btn.open { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 55%,var(--border)); background:var(--accent-soft); }
+.attach-btn svg { width:20px; height:20px; }
+.attach-btn:disabled { opacity:.45; cursor:not-allowed; }
+.attachment-menu { position:absolute; z-index:40; left:0; bottom:76px; width:min(270px,calc(100vw - 44px)); padding:7px; border:1px solid var(--border); border-radius:15px; background:var(--panel); box-shadow:0 14px 40px rgba(0,0,0,.24); }
+.attachment-menu[hidden] { display:none !important; }
+.attachment-menu-title { padding:8px 10px 6px; color:var(--muted); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.attachment-option { width:100%; display:flex; align-items:center; gap:11px; padding:10px; border:0; border-radius:9px; background:transparent; color:var(--text); text-align:left; cursor:pointer; }
+.attachment-option:hover { background:var(--panel-2); }
+.attachment-option-icon { width:34px; height:34px; display:grid; place-items:center; flex:none; border-radius:10px; background:var(--accent-soft); color:var(--accent); }
+.attachment-option-icon svg { width:18px; height:18px; }
+.attachment-option-copy { display:flex; flex-direction:column; gap:3px; }
+.attachment-option-copy strong { font-size:12px; font-weight:650; }
+.attachment-option-copy small { color:var(--muted); font-size:10px; }
 .composer:focus-within { border-color:color-mix(in srgb,var(--accent) 42%,var(--border)); }
 .composer textarea { display:block; width:100%; min-height:40px; max-height:145px; resize:none; padding:7px 7px 8px; border:0; outline:0; background:transparent; color:var(--text); font-size:14px; line-height:1.5; }
 .composer textarea::placeholder { color:var(--subtle); }
@@ -364,8 +390,12 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       <section class="composer-area">
         <div class="composer-wrap">
           <form class="composer" id="composer">
+            <div class="attachment-preview" id="attachmentPreview" aria-label="Selected attachments" hidden></div>
             <textarea id="prompt" rows="1" placeholder="Message GOZIE AI" aria-label="Message Gozie AI"></textarea>
             <div class="composer-tools">
+              <button class="attach-btn" id="attachmentButton" type="button" aria-label="Add attachment" aria-expanded="false" title="Add photos, files or audio">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
               <button class="tool-toggle" type="button" id="webSearchToggle" aria-pressed="false" title="Toggle web search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span>Web Search</span><span class="toggle-track"></span></button>
               <span class="composer-spacer"></span>
               <button class="mic-btn" id="voiceInputButton" type="button" aria-label="Start voice input" aria-pressed="false" title="Dictate a message">
@@ -374,6 +404,24 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
               <button class="send-btn" id="sendButton" type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button>
             </div>
           </form>
+          <div class="attachment-menu" id="attachmentMenu" role="menu" aria-label="Add an attachment" hidden>
+            <div class="attachment-menu-title">Add to your message</div>
+            <button class="attachment-option" type="button" data-attachment-kind="photos" role="menuitem">
+              <span class="attachment-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>
+              <span class="attachment-option-copy"><strong>Photos</strong><small>Add images for Gozie AI to examine</small></span>
+            </button>
+            <button class="attachment-option" type="button" data-attachment-kind="files" role="menuitem">
+              <span class="attachment-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M13 2v7h7M8 14h8m-8 4h8"/></svg></span>
+              <span class="attachment-option-copy"><strong>Files</strong><small>PDFs, Word, Excel, CSV and text</small></span>
+            </button>
+            <button class="attachment-option" type="button" data-attachment-kind="audio" role="menuitem">
+              <span class="attachment-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4m-4 0h8"/></svg></span>
+              <span class="attachment-option-copy"><strong>Audio</strong><small>Let Gozie AI transcribe a recording</small></span>
+            </button>
+          </div>
+          <input id="photoPicker" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
+          <input id="filePicker" type="file" accept=".pdf,.docx,.xlsx,.xlsm,.xlsb,.xls,.csv,.txt,.md,.html,.htm,.xml" multiple hidden>
+          <input id="audioPicker" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.webm,.flac" multiple hidden>
           <div class="voice-status" id="voiceStatus" role="status" aria-live="polite" hidden></div>
           <div class="privacy-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></svg><span>When you sign in, your conversations and preferences sync to your account. Messages are sent to Gozie AI to generate replies.</span></div>
         </div>
@@ -477,6 +525,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   let longPressTimer = null;
   let suppressNextHistoryClick = false;
   let contextMenuNode = null;
+  let pendingAttachments = [];
 
   function safeRead(key, fallback) {
     try { const value = localStorage.getItem(key); return value === null ? fallback : JSON.parse(value); }
@@ -1092,22 +1141,116 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       return results.length?{results,note:''}:{results:[],note:'Web Search did not find any usable results for this query.'};
     } catch(error) { return {results:[],note:'Web Search could not connect: '+friendlyNetworkError(error)}; }
   }
-  async function requestModel(messages, searchResults=[]) {
+  const ATTACHMENT_LIMITS = { count:4, singleBytes:10*1024*1024, totalBytes:20*1024*1024 };
+  const ATTACHMENT_EXTENSIONS = {
+    photos:['jpg','jpeg','png','webp','gif'],
+    files:['pdf','docx','xlsx','xlsm','xlsb','xls','csv','txt','md','html','htm','xml'],
+    audio:['mp3','wav','m4a','aac','ogg','webm','flac']
+  };
+  function fileExtension(file) {
+    const name=String(file?.name||''); const dot=name.lastIndexOf('.');
+    return dot>=0?name.slice(dot+1).toLowerCase():'';
+  }
+  function readableFileSize(bytes) {
+    if(bytes<1024) return bytes+' B';
+    if(bytes<1024*1024) return (bytes/1024).toFixed(0)+' KB';
+    return (bytes/1024/1024).toFixed(1)+' MB';
+  }
+  function closeAttachmentMenu() {
+    $('attachmentMenu').hidden=true;
+    $('attachmentButton').classList.remove('open');
+    $('attachmentButton').setAttribute('aria-expanded','false');
+  }
+  function toggleAttachmentMenu() {
+    const menu=$('attachmentMenu'), open=menu.hidden;
+    menu.hidden=!open;
+    $('attachmentButton').classList.toggle('open',open);
+    $('attachmentButton').setAttribute('aria-expanded',String(open));
+  }
+  function renderPendingAttachments() {
+    const root=$('attachmentPreview'); root.replaceChildren(); root.hidden=!pendingAttachments.length;
+    pendingAttachments.forEach((item,index)=>{
+      const chip=document.createElement('div'); chip.className='attachment-chip';
+      const thumb=document.createElement('div'); thumb.className='attachment-thumb';
+      if(item.kind==='photos' && item.previewUrl) {
+        const img=document.createElement('img'); img.src=item.previewUrl; img.alt='Selected image'; thumb.appendChild(img);
+      } else {
+        thumb.innerHTML=item.kind==='audio'
+          ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>'
+          : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M13 2v7h7"/></svg>';
+      }
+      const meta=document.createElement('div'); meta.className='attachment-meta';
+      const name=document.createElement('span'); name.className='attachment-name'; name.textContent=item.file.name;
+      const size=document.createElement('span'); size.className='attachment-size'; size.textContent=readableFileSize(item.file.size);
+      meta.append(name,size);
+      const remove=document.createElement('button'); remove.type='button'; remove.className='attachment-remove';
+      remove.setAttribute('aria-label','Remove '+item.file.name); remove.title='Remove attachment';
+      remove.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+      remove.addEventListener('click',()=>removePendingAttachment(index));
+      chip.append(thumb,meta,remove); root.appendChild(chip);
+    });
+  }
+  function removePendingAttachment(index) {
+    const [removed]=pendingAttachments.splice(index,1);
+    if(removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+    renderPendingAttachments();
+  }
+  function clearPendingAttachments() {
+    pendingAttachments.forEach(item=>{if(item.previewUrl)URL.revokeObjectURL(item.previewUrl);});
+    pendingAttachments=[]; renderPendingAttachments();
+  }
+  function addPickedFiles(fileList,kind) {
+    const files=Array.from(fileList||[]); if(!files.length) return;
+    let added=0;
+    for(const file of files) {
+      if(pendingAttachments.length>=ATTACHMENT_LIMITS.count) { notify('You can attach up to 4 files in one message.'); break; }
+      if(!ATTACHMENT_EXTENSIONS[kind]?.includes(fileExtension(file))) { notify('That file type is not supported in this attachment option.'); continue; }
+      if(!file.size || file.size>ATTACHMENT_LIMITS.singleBytes) { notify('Each attachment must be smaller than 10 MB.'); continue; }
+      const total=pendingAttachments.reduce((sum,item)=>sum+item.file.size,0)+file.size;
+      if(total>ATTACHMENT_LIMITS.totalBytes) { notify('All attachments together must be 20 MB or smaller.'); break; }
+      pendingAttachments.push({file,kind,previewUrl:kind==='photos'?URL.createObjectURL(file):null}); added++;
+    }
+    renderPendingAttachments();
+    if(added) notify(added===1?'Attachment added.':'Attachments added.');
+  }
+  function openAttachmentPicker(kind) {
+    closeAttachmentMenu();
+    const picker=kind==='photos'?'photoPicker':kind==='files'?'filePicker':'audioPicker';
+    $(picker).click();
+  }
+  async function requestModel(messages, searchResults=[], attachments=[]) {
     const cfg=readModelSettings(); const base=normalizeApiBase(cfg.endpoint);
     const token=await getGozieAuthToken();
-    const headers={'Content-Type':'application/json','Authorization':'Bearer '+token};
-    const response=await fetch(base+'/chat/completions',{method:'POST',headers,body:JSON.stringify({model:cfg.model,messages,search_results:searchResults,temperature:.7,max_tokens:10240,stream:false}),signal:AbortSignal.timeout?AbortSignal.timeout(240000):undefined});
+    const headers={'Authorization':'Bearer '+token};
+    let requestBody;
+    if(attachments.length) {
+      requestBody=new FormData();
+      requestBody.append('messages',JSON.stringify(messages));
+      requestBody.append('search_results',JSON.stringify(searchResults));
+      requestBody.append('temperature','0.7');
+      requestBody.append('max_tokens','10240');
+      requestBody.append('stream','false');
+      attachments.forEach(file=>requestBody.append('attachments',file,file.name));
+    } else {
+      headers['Content-Type']='application/json';
+      requestBody=JSON.stringify({model:cfg.model,messages,search_results:searchResults,temperature:.7,max_tokens:10240,stream:false});
+    }
+    const response=await fetch(base+'/chat/completions',{method:'POST',headers,body:requestBody,signal:AbortSignal.timeout?AbortSignal.timeout(240000):undefined});
     const data=await response.json().catch(()=>({}));
     if(!response.ok) throw new Error(data.error||data.message||('Gozie AI server returned HTTP '+response.status+'.'));
     const content=data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? data.content;
     if(typeof content!=='string' || !content.trim()) throw new Error('Gozie AI server responded, but no assistant message was returned.');
     return content.trim();
   }
-  async function sendMessage(text,editIndex=null) {
-    if(busy) return; const promptText=String(text||'').trim(); if(!promptText) return;
+  async function sendMessage(text,editIndex=null,attachments=[]) {
+    if(busy) return; const promptText=String(text||'').trim();
+    if(!promptText && !attachments.length) return;
+    const finalPrompt=promptText || (attachments.length?'Please examine the attached item(s) and help me understand them.':'');
+    const messageContent=attachments.length ? finalPrompt+'\n\nAttached: '+attachments.map(file=>file.name).join(', ') : finalPrompt;
     if(editIndex===null) {
       if(!currentChat()) { const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(chat); currentId=chat.id; }
-      addMessage('user',promptText);
+      addMessage('user',messageContent);
+      if(attachments.length) clearPendingAttachments();
     } else {
       const chat=currentChat(); const original=chat?.messages[editIndex];
       if(!chat || !original || original.role!=='user') return;
@@ -1118,7 +1261,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     $('prompt').value=''; resizePrompt(); busy=true; setSending(true);
     let searchNote=''; let searchContext=''; let searchResults=[];
     try {
-      if(searchEnabled) {
+      if(searchEnabled && promptText) {
         const search=await searchWeb(promptText); searchNote=search.note; searchResults=search.results;
         if(!searchResults.length) {
           addMessage('assistant','Live Web Search could not retrieve reliable results for this question. Please try again shortly. I have not substituted an older answer.');
@@ -1130,7 +1273,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       const messages=[{role:'system',content:'You are Gozie AI, a helpful, accurate and highly capable assistant. By default, provide detailed, comprehensive, well-organized answers with headings, clear explanations, practical step-by-step guidance, examples, relevant context and important caveats. Avoid unnecessarily short answers. Use the available response budget to answer the whole request, especially for educational, technical, comparison and how-to questions. Do not pad answers with repetition or invented details. Keep simple factual answers proportionate, and follow any request for brevity. When live web search results are supplied, use them carefully and cite their URLs. Do not claim to have searched the web unless search results were supplied.'}];
       if(searchContext) messages.push({role:'system',content:searchContext});
       messages.push(...history);
-      const answer=await requestModel(messages,searchResults);
+      const answer=await requestModel(messages,searchResults,attachments);
       addMessage('assistant',answer);
     } catch(error) {
       console.error('Gozie AI model request failed:',error);
@@ -1140,6 +1283,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   }
   function setSending(value) {
     $('sendButton').disabled=value; $('prompt').disabled=value;
+    $('attachmentButton').disabled=value; $('voiceInputButton').disabled=value; $('webSearchToggle').disabled=value;
     $('sendButton').innerHTML=value?'<span class="spinner"></span>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m-7 7 7-7 7 7"/></svg>';
   }
   function resizePrompt() { const input=$('prompt'); input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,145)+'px'; }
@@ -1327,7 +1471,21 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     const isLight=document.body.classList.contains('light');
     setTheme(isLight?'dark':'light');
   });
-  $('composer').addEventListener('submit',event=>{event.preventDefault();sendMessage($('prompt').value);});
+  $('composer').addEventListener('submit',event=>{
+    event.preventDefault();
+    const files=pendingAttachments.map(item=>item.file);
+    sendMessage($('prompt').value,null,files);
+  });
+  $('attachmentButton').addEventListener('click',toggleAttachmentMenu);
+  $('attachmentMenu').querySelectorAll('[data-attachment-kind]').forEach(button=>{
+    button.addEventListener('click',()=>openAttachmentPicker(button.dataset.attachmentKind));
+  });
+  $('photoPicker').addEventListener('change',event=>{addPickedFiles(event.target.files,'photos');event.target.value='';});
+  $('filePicker').addEventListener('change',event=>{addPickedFiles(event.target.files,'files');event.target.value='';});
+  $('audioPicker').addEventListener('change',event=>{addPickedFiles(event.target.files,'audio');event.target.value='';});
+  document.addEventListener('pointerdown',event=>{
+    if(!$('attachmentMenu').hidden && !$('attachmentMenu').contains(event.target) && !$('attachmentButton').contains(event.target)) closeAttachmentMenu();
+  });
   $('prompt').addEventListener('input',resizePrompt);
   $('prompt').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();$('composer').requestSubmit();}});
   $('voiceInputButton').addEventListener('click',toggleVoiceInput);
