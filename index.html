@@ -499,6 +499,16 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
 @keyframes splashLoad { from { transform:translateX(0); } to { transform:translateX(140%); } }
 @keyframes gozieSplashOut { to { opacity:0; visibility:hidden; pointer-events:none; } }
 @media (prefers-reduced-motion:reduce) { #gozieSplash::before,#gozieSplash::after,.splash-emblem,.splash-loading::after { animation:none; } #gozieSplash { animation-duration:.01ms; } }
+
+.temporary-chat-btn,.temporary-chat-save { min-height:35px; display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:7px 11px; border:1px solid var(--border); border-radius:10px; background:var(--panel); color:var(--muted); font-size:12px; font-weight:650; cursor:pointer; white-space:nowrap; }
+.temporary-chat-btn svg { width:16px; height:16px; }
+.temporary-chat-btn:hover,.temporary-chat-save:hover { border-color:var(--accent); color:var(--text); }
+.temporary-chat-btn.active { border-color:var(--accent); background:var(--accent-soft); color:var(--accent); }
+.temporary-chat-save { border-color:var(--accent); background:var(--accent); color:#fff; }
+.temporary-chat-save[hidden],.temporary-chat-notice[hidden] { display:none !important; }
+.temporary-chat-notice { display:flex; align-items:center; justify-content:center; gap:8px; margin:0 auto 8px; padding:8px 12px; border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border)); border-radius:10px; background:var(--accent-soft); color:var(--muted); font-size:11px; text-align:center; }
+.temporary-dot { width:7px; height:7px; flex:none; border-radius:50%; background:var(--accent); }
+@media (max-width:640px) { .temporary-chat-btn,.temporary-chat-save { min-height:33px; padding:6px 8px; font-size:11px; } .temporary-chat-btn { gap:5px; } .temporary-chat-btn svg { width:15px; height:15px; } }
 </style>
 </head>
 <body>
@@ -531,6 +541,8 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
         <div class="topbar-brand"><div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.65 5.35L19 10l-5.35 1.65L12 17l-1.65-5.35L5 10l5.35-1.65L12 3Z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/></svg></div><span>GOZIE <span style="color:var(--accent)">AI</span></span></div>
       </div>
       <div class="topbar-right">
+        <button class="temporary-chat-btn" id="temporaryChatButton" type="button" aria-pressed="false" title="Start a temporary chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a7 7 0 0 0-4 12.75V19h8v-3.25A7 7 0 0 0 12 3Z"/><path d="M9 22h6M9 19h6"/></svg><span id="temporaryChatLabel">Temporary</span></button>
+        <button class="temporary-chat-save" id="saveTemporaryChat" type="button" hidden>Save chat</button>
         <button class="icon-btn" id="themeButton" aria-label="Toggle light and dark theme" title="Toggle theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.6 8.6 0 1 0 20.5 14.2Z"/></svg></button>
         <button class="icon-btn" id="settingsButton" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.5 2.6-1.7-.7a8 8 0 0 1-1.7 1l-.3 1.8h-3l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.7-1.5-2.6 1.4-1.1a8 8 0 0 1 0-2l-1.4-1.1 1.5-2.6 1.7.7a8 8 0 0 1 1.7-1l.3-1.8h3l.3 1.8a8 8 0 0 1 1.7 1l1.7-.7 1.5 2.6-1.4 1.1a8 8 0 0 1 0 2Z"/></svg></button>
       </div>
@@ -538,7 +550,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
 
     <main class="page-view" id="chatView">
       <section class="chat-scroll" id="messages">
-        <div class="chat-column"><div class="thread" id="thread"></div></div>
+        <div class="chat-column"><div class="temporary-chat-notice" id="temporaryChatNotice" hidden><span class="temporary-dot"></span><span>Temporary chat · This conversation will not appear in your history.</span></div><div class="thread" id="thread"></div></div>
       </section>
       <section class="composer-area">
         <div class="composer-wrap">
@@ -701,6 +713,9 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   if (!Array.isArray(chats)) chats = [];
   chats = chats.filter(c => c && typeof c.id === 'string' && Array.isArray(c.messages));
   let currentId = chats.length ? chats[0].id : null;
+  let temporaryChat = null;
+  let isTemporaryChat = false;
+  let returnChatId = null;
   let currentView = 'chat';
   let busy = false;
   let toastTimer = null;
@@ -904,21 +919,54 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       }
     }
   }
-  function currentChat() { return chats.find(chat => chat.id === currentId) || null; }
+  function currentChat() { return isTemporaryChat ? temporaryChat : (chats.find(chat => chat.id === currentId) || null); }
   function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
   function closeSidebar() { $('sidebar').classList.remove('open'); $('drawerScrim').classList.remove('show'); }
   function openSidebar() { $('sidebar').classList.add('open'); $('drawerScrim').classList.add('show'); }
   function activeChatStorageKey() { return currentUser?.uid ? userCacheKey(currentUser.uid,'active_chat') : 'gozie_guest_active_chat'; }
   // Keep the active thread through reloads in this tab; a newly opened tab gets a new chat.
-  function persistCurrentChat() { if(currentId) sessionStorage.setItem(activeChatStorageKey(),currentId); }
+  function persistCurrentChat() { if(!isTemporaryChat && currentId) sessionStorage.setItem(activeChatStorageKey(),currentId); }
   function restoreCurrentChat() {
     const saved=sessionStorage.getItem(activeChatStorageKey());
     currentId=saved && chats.some(chat=>chat.id===saved) ? saved : null;
     if(!currentId) sessionStorage.removeItem(activeChatStorageKey());
   }
   function newChat() {
+    if(isTemporaryChat && temporaryChat?.messages?.length && !confirm('Leave this temporary chat? It will not be saved unless you choose Save chat.')) return;
+    isTemporaryChat=false; temporaryChat=null; returnChatId=null;
     const chat = {id:makeId(), title:'New chat', messages:[], updated:Date.now()};
-    chats.unshift(chat); currentId = chat.id; persistCurrentChat(); saveChats(); showView('chat'); renderChat(); closeSidebar(); $('prompt').focus();
+    chats.unshift(chat); currentId = chat.id; persistCurrentChat(); updateTemporaryChatUI(); saveChats(); showView('chat'); renderChat(); closeSidebar(); $('prompt').focus();
+  }
+  function updateTemporaryChatUI() {
+    const active=!!isTemporaryChat;
+    $('temporaryChatButton').classList.toggle('active',active);
+    $('temporaryChatButton').setAttribute('aria-pressed',String(active));
+    $('temporaryChatButton').title=active?'Temporary chat is on':'Start a temporary chat';
+    $('temporaryChatLabel').textContent=active?'Temporary on':'Temporary';
+    $('saveTemporaryChat').hidden=!active;
+    $('temporaryChatNotice').hidden=!active;
+  }
+  function startTemporaryChat() {
+    if(isTemporaryChat) {
+      if(temporaryChat?.messages?.length && !confirm('End this temporary chat? It will be permanently discarded unless you save it first.')) return;
+      isTemporaryChat=false; temporaryChat=null;
+      currentId=returnChatId && chats.some(chat=>chat.id===returnChatId)?returnChatId:null;
+      returnChatId=null;
+      if(!currentId) { const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(chat); currentId=chat.id; saveChats(); }
+      persistCurrentChat();
+    } else {
+      returnChatId=currentId && chats.some(chat=>chat.id===currentId)?currentId:null;
+      temporaryChat={id:makeId(),title:'Temporary chat',messages:[],updated:Date.now(),temporary:true};
+      currentId=temporaryChat.id; isTemporaryChat=true;
+    }
+    updateTemporaryChatUI(); showView('chat'); renderChat(); closeSidebar(); $('prompt').focus();
+  }
+  function saveTemporaryChat() {
+    if(!isTemporaryChat || !temporaryChat) return;
+    const saved={...temporaryChat}; delete saved.temporary;
+    if(!saved.messages.length) { notify('Send a message before saving this chat.'); return; }
+    chats.unshift(saved); currentId=saved.id; temporaryChat=null; isTemporaryChat=false; returnChatId=null;
+    persistCurrentChat(); updateTemporaryChatUI(); saveChats(); renderChat(); notify('Chat saved to your history.');
   }
   let startupChatReady=false;
   function startFreshStartupChat() {
@@ -1278,7 +1326,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
         button.addEventListener('click',()=>{selectedChatIds.has(chat.id)?selectedChatIds.delete(chat.id):selectedChatIds.add(chat.id);renderHistory();});
         entry.append(button,check);
       } else {
-        button.addEventListener('click',()=>{ if(suppressNextHistoryClick){suppressNextHistoryClick=false;return;} currentId=chat.id; persistCurrentChat(); showView('chat'); renderChat(); closeSidebar(); });
+        button.addEventListener('click',()=>{ if(suppressNextHistoryClick){suppressNextHistoryClick=false;return;} if(isTemporaryChat){if(temporaryChat?.messages?.length && !confirm('Leave this temporary chat? It will not be saved unless you choose Save chat.'))return;isTemporaryChat=false;temporaryChat=null;returnChatId=null;updateTemporaryChatUI();} currentId=chat.id; persistCurrentChat(); showView('chat'); renderChat(); closeSidebar(); });
         attachLongPress(button,chat.id);
         entry.appendChild(button);
       }
@@ -1339,8 +1387,9 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     if(attachments.length) message.attachments=attachments;
     if(generatedBlob) { message.generatedImageKey=makeId(); generatedImageBlobs.set(message.generatedImageKey,generatedBlob); }
     chat.messages.push(message); chat.updated=Date.now(); persistCurrentChat();
-    if (chat.title==='New chat' && role==='user') chat.title=String(content).slice(0,38)+(String(content).length>38?'…':'');
-    saveChats(); renderChat();
+    if ((chat.title==='New chat' || chat.title==='Temporary chat') && role==='user') chat.title=String(content).slice(0,38)+(String(content).length>38?'…':'');
+    if(!isTemporaryChat) saveChats(); else renderHistory();
+    renderChat();
   }
   function showView(view) {
     currentView=view;
@@ -2164,6 +2213,8 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   $('closeSidebar').addEventListener('click',closeSidebar);
   $('drawerScrim').addEventListener('click',closeSidebar);
   $('newChat').addEventListener('click',newChat);
+  $('temporaryChatButton').addEventListener('click',startTemporaryChat);
+  $('saveTemporaryChat').addEventListener('click',saveTemporaryChat);
   $('searchChats').addEventListener('input',renderHistory);
   $('manageChatHistory').addEventListener('click',startBulkDelete);
   $('selectAllChats').addEventListener('click',()=>{const all=chats.every(chat=>selectedChatIds.has(chat.id));if(all)selectedChatIds.clear();else chats.forEach(chat=>selectedChatIds.add(chat.id));renderHistory();});
@@ -2258,7 +2309,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
 
   // Start on a clean welcome screen. A fresh conversation is created once
   // Firebase tells us whether this app session is a guest or signed-in session.
-  buildAccentOptions(); loadPreferences(); restoreCurrentChat(); renderHistory(); renderChat();
+  buildAccentOptions(); loadPreferences(); restoreCurrentChat(); updateTemporaryChatUI(); renderHistory(); renderChat();
   if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{if(localStorage.getItem(STORAGE.theme)==='system')setTheme('system');});
 
   // Firebase email/password only. No Google provider or redirect flow is used.
