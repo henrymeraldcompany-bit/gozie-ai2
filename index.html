@@ -483,9 +483,26 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   .image-creating-progress::after { left:30%; width:40%; }
 }
 
+
+#gozieSplash { position:fixed; inset:0; z-index:9999; display:grid; place-items:center; overflow:hidden; background:radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--accent) 17%,var(--bg)),var(--bg) 58%); opacity:1; visibility:visible; animation:gozieSplashOut .28s ease 1s forwards; }
+#gozieSplash::before,#gozieSplash::after { content:""; position:absolute; width:min(72vw,360px); aspect-ratio:1; border:1px solid color-mix(in srgb,var(--accent) 34%,transparent); border-radius:50%; animation:splashOrbit 3s linear infinite; }
+#gozieSplash::after { width:min(88vw,440px); border-style:dashed; opacity:.45; animation-direction:reverse; }
+.splash-core { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:17px; }
+.splash-emblem { width:76px; height:76px; display:grid; place-items:center; border:1px solid color-mix(in srgb,var(--accent) 55%,transparent); border-radius:24px; background:color-mix(in srgb,var(--accent) 16%,var(--panel)); color:var(--accent); box-shadow:0 0 38px color-mix(in srgb,var(--accent) 30%,transparent),inset 0 0 22px color-mix(in srgb,var(--accent) 12%,transparent); animation:splashPulse 1.1s ease-in-out infinite; }
+.splash-emblem svg { width:39px; height:39px; }
+.splash-wordmark { color:var(--text); font-size:19px; font-weight:850; letter-spacing:3px; }
+.splash-wordmark span { color:var(--accent); }
+.splash-loading { width:116px; height:3px; overflow:hidden; border-radius:5px; background:color-mix(in srgb,var(--accent) 18%,var(--panel)); }
+.splash-loading::after { content:""; display:block; width:42%; height:100%; border-radius:5px; background:var(--accent); box-shadow:0 0 12px var(--accent); animation:splashLoad .75s ease-in-out infinite alternate; }
+@keyframes splashPulse { 50% { transform:translateY(-4px) scale(1.06); box-shadow:0 0 52px color-mix(in srgb,var(--accent) 48%,transparent); } }
+@keyframes splashOrbit { to { transform:rotate(360deg) scale(1.06); } }
+@keyframes splashLoad { from { transform:translateX(0); } to { transform:translateX(140%); } }
+@keyframes gozieSplashOut { to { opacity:0; visibility:hidden; pointer-events:none; } }
+@media (prefers-reduced-motion:reduce) { #gozieSplash::before,#gozieSplash::after,.splash-emblem,.splash-loading::after { animation:none; } #gozieSplash { animation-duration:.01ms; } }
 </style>
 </head>
 <body>
+<div id="gozieSplash" aria-label="Loading Gozie AI"><div class="splash-core"><div class="splash-emblem" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.65 5.35L19 10l-5.35 1.65L12 17l-1.65-5.35L5 10l5.35-1.65L12 3Z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/><path d="m5 15 .55 1.45L7 17l-1.45.55L5 19l-.55-1.45L3 17l1.45-.55L5 15Z"/></svg></div><div class="splash-wordmark">GOZIE <span>AI</span></div><div class="splash-loading"></div></div></div>
 <div class="app">
   <aside class="sidebar" id="sidebar" aria-label="Conversation sidebar">
     <div class="brand-row">
@@ -892,11 +909,12 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   function closeSidebar() { $('sidebar').classList.remove('open'); $('drawerScrim').classList.remove('show'); }
   function openSidebar() { $('sidebar').classList.add('open'); $('drawerScrim').classList.add('show'); }
   function activeChatStorageKey() { return currentUser?.uid ? userCacheKey(currentUser.uid,'active_chat') : 'gozie_guest_active_chat'; }
-  function persistCurrentChat() { if(currentId) localStorage.setItem(activeChatStorageKey(),currentId); }
+  // Keep the active thread through reloads in this tab; a newly opened tab gets a new chat.
+  function persistCurrentChat() { if(currentId) sessionStorage.setItem(activeChatStorageKey(),currentId); }
   function restoreCurrentChat() {
-    const saved=localStorage.getItem(activeChatStorageKey());
-    currentId=saved && chats.some(chat=>chat.id===saved) ? saved : (chats[0]?.id||null);
-    persistCurrentChat();
+    const saved=sessionStorage.getItem(activeChatStorageKey());
+    currentId=saved && chats.some(chat=>chat.id===saved) ? saved : null;
+    if(!currentId) sessionStorage.removeItem(activeChatStorageKey());
   }
   function newChat() {
     const chat = {id:makeId(), title:'New chat', messages:[], updated:Date.now()};
@@ -908,9 +926,8 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     startupChatReady=true;
     restoreCurrentChat();
     if(!currentId) {
-      const existingEmpty=chats.find(chat=>(chat.title||'New chat')==='New chat' && chat.messages.length===0);
-      if(existingEmpty) currentId=existingEmpty.id;
-      else { const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()}; chats.unshift(chat); currentId=chat.id; saveChats(); }
+      const chat={id:makeId(),title:'New chat',messages:[],updated:Date.now()};
+      chats.unshift(chat); currentId=chat.id; saveChats();
     }
     persistCurrentChat(); showView('chat'); renderChat();
   }
@@ -1989,22 +2006,32 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     if(voiceSilenceTimer) clearTimeout(voiceSilenceTimer);
     voiceSilenceTimer=null;
   }
+  function normalizeVoiceText(value) { return String(value||'').replace(/\s+/g,' ').trim(); }
+  function appendVoiceWithoutOverlap(existing,incoming) {
+    const left=normalizeVoiceText(existing), right=normalizeVoiceText(incoming);
+    if(!left) return right; if(!right) return left;
+    const a=left.split(' '), b=right.split(' '), max=Math.min(8,a.length,b.length);
+    let overlap=0;
+    for(let count=max;count>0;count--) {
+      const tail=a.slice(-count).map(word=>word.toLocaleLowerCase());
+      const head=b.slice(0,count).map(word=>word.toLocaleLowerCase());
+      if(tail.every((word,index)=>word===head[index])) { overlap=count; break; }
+    }
+    return normalizeVoiceText(left+' '+b.slice(overlap).join(' '));
+  }
   function updateVoiceDraft() {
-    const sessionText=voiceSessionResults.map(result=>result?.transcript||'').filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
-    $('prompt').value=[voiceBaseText,voiceCommittedText,sessionText].map(value=>String(value||'').trim()).filter(Boolean).join(' ');
+    const sessionText=normalizeVoiceText(voiceSessionResults.map(result=>result?.transcript||'').filter(Boolean).join(' '));
+    $('prompt').value=[voiceBaseText,voiceCommittedText,sessionText].map(normalizeVoiceText).filter(Boolean).join(' ');
     resizePrompt();
   }
   function commitVoiceSession() {
-    const finalText=voiceSessionResults.filter(result=>result?.isFinal).map(result=>result.transcript).filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
-    if(finalText) voiceCommittedText=[voiceCommittedText,finalText].filter(Boolean).join(' ');
-    voiceSessionResults=[];
-    updateVoiceDraft();
+    const finalText=normalizeVoiceText(voiceSessionResults.filter(result=>result?.isFinal).map(result=>result.transcript).filter(Boolean).join(' '));
+    if(finalText) voiceCommittedText=appendVoiceWithoutOverlap(voiceCommittedText,finalText);
+    voiceSessionResults=[]; updateVoiceDraft();
   }
   function finishVoiceInput() {
-    clearVoiceSilenceTimer();
-    voiceListening=false; voiceRecognition=null; voiceStopRequested=false;
-    setVoiceButtonState(false);
-    voiceSessionResults=[]; voiceCommittedText='';
+    clearVoiceSilenceTimer(); voiceListening=false; voiceRecognition=null; voiceStopRequested=false;
+    setVoiceButtonState(false); voiceSessionResults=[]; voiceCommittedText='';
     if($('prompt').value.trim()) setVoiceStatus('Voice input added. You can edit the text before sending.');
     else setVoiceStatus('',false);
   }
@@ -2017,80 +2044,54 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     },3000);
   }
   function stopVoiceInput() {
-    voiceStopRequested=true;
-    clearVoiceSilenceTimer();
+    voiceStopRequested=true; clearVoiceSilenceTimer();
     if(voiceRecognition) {
       try { voiceRecognition.stop(); }
       catch(error) { console.warn('Voice input stop:',error); finishVoiceInput(); }
     } else finishVoiceInput();
   }
+  function startVoiceRecognitionSegment(Recognition) {
+    if(!voiceListening || voiceStopRequested) return;
+    const recognition=new Recognition(); voiceRecognition=recognition;
+    recognition.lang=navigator.language||'en-US'; recognition.interimResults=true;
+    recognition.continuous=false; recognition.maxAlternatives=1;
+    recognition.onstart=()=>{
+      if(voiceRecognition!==recognition) return;
+      voiceListening=true; setVoiceButtonState(true);
+      setVoiceStatus('Listening… It will stop after 3 seconds of silence. Tap the microphone to stop sooner.');
+      resetVoiceSilenceTimer(recognition);
+    };
+    recognition.onresult=event=>{
+      if(voiceRecognition!==recognition) return;
+      const currentResults=[];
+      for(let i=0;i<event.results.length;i++) currentResults.push({transcript:event.results[i][0]?.transcript||'',isFinal:!!event.results[i].isFinal});
+      voiceSessionResults=currentResults; updateVoiceDraft(); resetVoiceSilenceTimer(recognition);
+    };
+    recognition.onerror=event=>{
+      if(voiceRecognition!==recognition || event.error==='no-speech') return;
+      const messages={'not-allowed':'Microphone permission was denied. Allow microphone access in your browser settings.','service-not-allowed':'Your browser blocked its speech-recognition service.','audio-capture':'No microphone was detected.','network':'The browser speech-recognition service could not connect.'};
+      voiceStopRequested=true; clearVoiceSilenceTimer();
+      setVoiceStatus(messages[event.error]||'Voice input stopped. Please try again.');
+      notify(messages[event.error]||'Voice input stopped. Please try again.');
+    };
+    recognition.onend=()=>{
+      if(voiceRecognition!==recognition) return;
+      commitVoiceSession();
+      if(voiceListening && !voiceStopRequested) {
+        voiceRecognition=null;
+        setTimeout(()=>startVoiceRecognitionSegment(Recognition),120);
+      } else finishVoiceInput();
+    };
+    try { recognition.start(); }
+    catch(error) { console.warn('Voice input segment start:',error); if(voiceListening) finishVoiceInput(); }
+  }
   function toggleVoiceInput() {
     if(voiceListening) { stopVoiceInput(); return; }
     const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!Recognition) {
-      notify('Voice input is not supported in this browser. Try another browser or use your phone keyboard microphone.');
-      return;
-    }
-    try {
-      const recognition=new Recognition();
-      voiceRecognition=recognition;
-      voiceStopRequested=false;
-      voiceBaseText=$('prompt').value.trim();
-      voiceCommittedText='';
-      voiceSessionResults=[];
-      recognition.lang=navigator.language||'en-US';
-      recognition.interimResults=true;
-      recognition.continuous=true;
-      recognition.maxAlternatives=1;
-      recognition.onstart=()=>{
-        voiceListening=true; setVoiceButtonState(true);
-        setVoiceStatus('Listening… It will stop after 3 seconds of silence. Tap the microphone to stop sooner.');
-        resetVoiceSilenceTimer(recognition);
-      };
-      recognition.onresult=event=>{
-        // SpeechRecognition.results contains earlier final results as well as the
-        // latest result. Rebuild this segment instead of appending it on every event.
-        const currentResults=[];
-        for(let i=0;i<event.results.length;i++) {
-          currentResults.push({
-            transcript:event.results[i][0]?.transcript||'',
-            isFinal:!!event.results[i].isFinal
-          });
-        }
-        voiceSessionResults=currentResults;
-        updateVoiceDraft();
-        resetVoiceSilenceTimer(recognition);
-      };
-      recognition.onerror=event=>{
-        if(event.error==='no-speech') return;
-        const messages={
-          'not-allowed':'Microphone permission was denied. Allow microphone access in your browser settings.',
-          'service-not-allowed':'Your browser blocked its speech-recognition service.',
-          'audio-capture':'No microphone was detected.',
-          'network':'The browser speech-recognition service could not connect.'
-        };
-        voiceStopRequested=true;
-        clearVoiceSilenceTimer();
-        setVoiceStatus(messages[event.error]||'Voice input stopped. Please try again.');
-        notify(messages[event.error]||'Voice input stopped. Please try again.');
-      };
-      recognition.onend=()=>{
-        if(voiceListening && !voiceStopRequested && voiceRecognition===recognition) {
-          // Commit the completed segment exactly once before a browser restart.
-          commitVoiceSession();
-          try { recognition.start(); return; }
-          catch(error) { console.warn('Voice input restart:',error); }
-        }
-        finishVoiceInput();
-      };
-      recognition.start();
-    } catch(error) {
-      clearVoiceSilenceTimer();
-      voiceRecognition=null; voiceListening=false; voiceStopRequested=false;
-      voiceSessionResults=[]; voiceCommittedText='';
-      setVoiceButtonState(false);
-      notify('Could not start voice input. Check microphone permission and try again.');
-    }
+    if(!Recognition) { notify('Voice input is not supported in this browser. Try another browser or use your phone keyboard microphone.'); return; }
+    voiceStopRequested=false; voiceBaseText=$('prompt').value.trim();
+    voiceCommittedText=''; voiceSessionResults=[]; voiceListening=true;
+    setVoiceButtonState(true); startVoiceRecognitionSegment(Recognition);
   }
   function setSearchEnabled(value) {
     searchEnabled=!!value;
