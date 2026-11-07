@@ -859,23 +859,25 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   }
   let activeSpeechUtterance=null;
   let activeSpeechMessage=null;
-  function refreshSpeechAction() {
+  function refreshSpeechAction(message=activeSpeechMessage) {
+    if(!message) return;
     const messages=currentChat()?.messages||[];
-    const index=activeSpeechMessage?messages.indexOf(activeSpeechMessage):-1;
+    const index=messages.indexOf(message);
     const row=index>=0?document.querySelector('[data-message-index="'+index+'"]'):null;
     const button=row?.querySelector('.message-action[aria-label="Read aloud"], .message-action[aria-label="Stop reading"]');
     if(!button) return;
-    const speaking=!!activeSpeechMessage;
+    const speaking=activeSpeechMessage===message;
     button.classList.toggle('active',speaking);
     button.title=speaking?'Stop reading':'Read aloud';
     button.setAttribute('aria-label',speaking?'Stop reading':'Read aloud');
     button.innerHTML=speaking?'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5l-5 4H4Z"/><path d="M17 9a5 5 0 0 1 0 6m2.5-9a9 9 0 0 1 0 12"/></svg>';
   }
   function stopMessageSpeech() {
+    const stoppedMessage=activeSpeechMessage;
     activeSpeechUtterance=null;
     activeSpeechMessage=null;
     if('speechSynthesis' in window) window.speechSynthesis.cancel();
-    refreshSpeechAction();
+    refreshSpeechAction(stoppedMessage);
   }
   function toggleMessageSpeech(message) {
     if(activeSpeechMessage===message) { stopMessageSpeech(); return; }
@@ -887,7 +889,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     utterance.lang=navigator.language||'en-US';
     activeSpeechMessage=message;
     activeSpeechUtterance=utterance;
-    utterance.onend=()=>{if(activeSpeechUtterance===utterance){activeSpeechUtterance=null;activeSpeechMessage=null;refreshSpeechAction();}};
+    utterance.onend=()=>{if(activeSpeechUtterance===utterance){activeSpeechUtterance=null;activeSpeechMessage=null;refreshSpeechAction(message);}};
     utterance.onerror=()=>{if(activeSpeechUtterance===utterance){activeSpeechUtterance=null;activeSpeechMessage=null;refreshSpeechAction();}};
     refreshSpeechAction();
     window.speechSynthesis.speak(utterance);
