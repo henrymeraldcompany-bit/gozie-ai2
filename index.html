@@ -685,7 +685,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     return button;
   }
   function appendTextWithBreaks(parent,value) {
-    String(value).split('\\n').forEach((part,index)=>{
+    String(value).split('\n').forEach((part,index)=>{
       if(index) parent.appendChild(document.createElement('br'));
       if(part) parent.appendChild(document.createTextNode(part));
     });
@@ -699,7 +699,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
   function appendInlineMarkdown(parent,value,depth=0) {
     const source=String(value||'');
     if(depth>6) { appendTextWithBreaks(parent,source); return; }
-    const pattern=/(`[^`\\n]+`|\\*\\*[\\s\\S]+?\\*\\*|__[\\s\\S]+?__|~~[\\s\\S]+?~~|\\*[^*\\n]+\\*|_[^_\\n]+_|\\[[^\\]]+\\]\\(https?:\\/\\/[^)\\s]+\\)|https?:\\/\\/[^\\s<]+)/g;
+    const pattern=/(`[^`\n]+`|\*\*[\s\S]+?\*\*|__[\s\S]+?__|~~[\s\S]+?~~|\*[^*\n]+\*|_[^_\n]+_|\[[^\]]+\]\(https?:\/\/[^)\s]+\)|https?:\/\/[^\s<]+)/g;
     let cursor=0,match;
     while((match=pattern.exec(source))!==null) {
       appendTextWithBreaks(parent,source.slice(cursor,match.index));
@@ -713,7 +713,7 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
       } else if(token.startsWith('*')||token.startsWith('_')) {
         const em=document.createElement('em'); appendInlineMarkdown(em,token.slice(1,-1),depth+1); parent.appendChild(em);
       } else {
-        const mdLink=token.match(/^\\[([^\\]]+)\\]\\((https?:\\/\\/[^)\\s]+)\\)$/);
+        const mdLink=token.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
         let label=mdLink?mdLink[1]:token;
         let rawUrl=mdLink?mdLink[2]:token;
         let trailing='';
@@ -758,44 +758,44 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
     wrapper.append(toolbar,pre); return wrapper;
   }
   function splitMarkdownTableRow(line) {
-    return String(line).trim().replace(/^\\|/,'').replace(/\\|$/,'').split('|').map(cell=>cell.trim());
+    return String(line).trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(cell=>cell.trim());
   }
   function renderMarkdown(source,container) {
     container.replaceChildren();
-    const lines=String(source||'').replace(/\\r\\n?/g,'\\n').split('\\n');
+    const lines=String(source||'').replace(/\r\n?/g,'\n').split('\n');
     let paragraph=[],list=null,listType='';
     const flushParagraph=()=>{
       if(!paragraph.length) return;
-      const p=document.createElement('p'); appendInlineMarkdown(p,paragraph.join('\\n')); container.appendChild(p); paragraph=[];
+      const p=document.createElement('p'); appendInlineMarkdown(p,paragraph.join('\n')); container.appendChild(p); paragraph=[];
     };
     const flushList=()=>{ if(list){container.appendChild(list);list=null;listType='';} };
     for(let i=0;i<lines.length;) {
       const line=lines[i];
-      if(/^\\s*```/.test(line)) {
+      if(/^\s*```/.test(line)) {
         flushParagraph(); flushList();
-        const language=line.trim().slice(3).trim().split(/\\s+/)[0]||'text';
+        const language=line.trim().slice(3).trim().split(/\s+/)[0]||'text';
         const codeLines=[]; i++;
-        while(i<lines.length&&!/^\\s*```\\s*$/.test(lines[i])) codeLines.push(lines[i++]);
+        while(i<lines.length&&!/^\s*```\s*$/.test(lines[i])) codeLines.push(lines[i++]);
         if(i<lines.length) i++;
-        container.appendChild(createCodeBlock(codeLines.join('\\n'),language));
+        container.appendChild(createCodeBlock(codeLines.join('\n'),language));
         continue;
       }
       if(!line.trim()) { flushParagraph(); flushList(); i++; continue; }
-      const heading=line.match(/^(#{1,6})\\s+(.+)$/);
+      const heading=line.match(/^(#{1,6})\s+(.+)$/);
       if(heading) {
         flushParagraph(); flushList();
         const element=document.createElement('h'+heading[1].length); appendInlineMarkdown(element,heading[2]); container.appendChild(element); i++; continue;
       }
-      if(/^(?:---+|\\*\\*\\*+|___+)\\s*$/.test(line.trim())) {
+      if(/^(?:---+|\*\*\*+|___+)\s*$/.test(line.trim())) {
         flushParagraph(); flushList(); container.appendChild(document.createElement('hr')); i++; continue;
       }
-      if(/^\\s*>/.test(line)) {
+      if(/^\s*>/.test(line)) {
         flushParagraph(); flushList();
         const quote=[];
-        while(i<lines.length&&/^\\s*>/.test(lines[i])) quote.push(lines[i++].replace(/^\\s*>\\s?/,'')); 
-        const block=document.createElement('blockquote'); const p=document.createElement('p'); appendInlineMarkdown(p,quote.join('\\n')); block.appendChild(p); container.appendChild(block); continue;
+        while(i<lines.length&&/^\s*>/.test(lines[i])) quote.push(lines[i++].replace(/^\s*>\s?/,'')); 
+        const block=document.createElement('blockquote'); const p=document.createElement('p'); appendInlineMarkdown(p,quote.join('\n')); block.appendChild(p); container.appendChild(block); continue;
       }
-      if(line.includes('|')&&i+1<lines.length&&/^\\s*\\|?\\s*:?-{3,}:?\\s*(?:\\|\\s*:?-{3,}:?\\s*)+\\|?\\s*$/.test(lines[i+1])) {
+      if(line.includes('|')&&i+1<lines.length&&/^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[i+1])) {
         flushParagraph(); flushList();
         const table=document.createElement('table'); const thead=document.createElement('thead'); const headerRow=document.createElement('tr');
         splitMarkdownTableRow(line).forEach(cell=>{const th=document.createElement('th');appendInlineMarkdown(th,cell);headerRow.appendChild(th);});
@@ -806,8 +806,8 @@ body.light .message-row.user .message-bubble { background:color-mix(in srgb,var(
         }
         table.appendChild(tbody); container.appendChild(table); continue;
       }
-      const bullet=line.match(/^\\s*[-+*]\\s+(.+)$/);
-      const numbered=line.match(/^\\s*\\d+[.)]\\s+(.+)$/);
+      const bullet=line.match(/^\s*[-+*]\s+(.+)$/);
+      const numbered=line.match(/^\s*\d+[.)]\s+(.+)$/);
       if(bullet||numbered) {
         flushParagraph();
         const type=bullet?'ul':'ol';
