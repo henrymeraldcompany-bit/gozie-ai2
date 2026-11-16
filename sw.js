@@ -1,12 +1,16 @@
 
-const CACHE_NAME = 'gozie-ai-v33';
+const CACHE_NAME = 'gozie-ai-v34';
 
 const FILES = [
   "./",
   "./index.html",
   "./manifest.json",
   "./icon-192.png",
-  "./icon-512.png"
+  "./icon-512.png",
+  "./live-character/live-character.css",
+  "./live-character/live-character-model.js",
+  "./live-character/gozie-character-model.js",
+  "./live-character/live-character-ui.js"
 ];
 
 self.addEventListener("install", event => {
