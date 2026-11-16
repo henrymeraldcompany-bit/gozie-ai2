@@ -8,7 +8,6 @@ const FILES = [
   "./icon-192.png",
   "./icon-512.png",
   "./live-character/live-character.css",
-  "./live-character/live-character-model.js",
   "./live-character/gozie-character-model.js",
   "./live-character/live-character-ui.js"
 ];
