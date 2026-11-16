@@ -42,6 +42,7 @@ function setOverlayState(isOpen) {
     window.setTimeout(() => exitButton?.focus(), 50);
   } else {
     settingsPanel.hidden = true;
+    settingsButton?.setAttribute("aria-expanded", "false");
     captionPanel.hidden = true;
     captionsButton.setAttribute("aria-pressed", "false");
     captionsButton.classList.remove("accent-active");
@@ -166,9 +167,13 @@ exitButton?.addEventListener("click", closeCharacter);
 
 settingsButton?.addEventListener("click", () => {
   settingsPanel.hidden = !settingsPanel.hidden;
+  settingsButton.setAttribute("aria-expanded", String(!settingsPanel.hidden));
   if (!settingsPanel.hidden) captionPanel.hidden = true;
 });
-settingsClose?.addEventListener("click", () => { settingsPanel.hidden = true; });
+settingsClose?.addEventListener("click", () => {
+  settingsPanel.hidden = true;
+  settingsButton?.setAttribute("aria-expanded", "false");
+});
 
 captionsButton?.addEventListener("click", () => {
   const show = captionsButton.getAttribute("aria-pressed") !== "true";
@@ -176,6 +181,7 @@ captionsButton?.addEventListener("click", () => {
   captionsButton.classList.toggle("accent-active", show);
   captionPanel.hidden = !show;
   settingsPanel.hidden = true;
+  settingsButton?.setAttribute("aria-expanded", "false");
 });
 
 micButton?.addEventListener("click", () => showNotice("Microphone connection will be added in Task 5."));
