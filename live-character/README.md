@@ -37,3 +37,16 @@ gozie.parts.head.rotation.y = 0.2;
 ```
 
 The main Gozie AI chat page has not been changed in Task 1. Task 2 will build the full-screen character interface and add its Live Chat entry point immediately to the **right of the Send button** in the message composer.
+
+
+## Task 2 — Full-screen interface
+The main chat page now includes a compact **Live Chat** launch button immediately to the right of Send. It opens a full-screen character stage with the complete 3D model and five controls positioned to match the supplied layout:
+- Top left: exit.
+- Top right: options.
+- Bottom left: captions preview toggle.
+- Bottom centre: microphone control placeholder.
+- Bottom right: speaker control placeholder.
+
+The character screen currently renders the procedural model with gentle idle motion and blinking eyes. Microphone and speaker actions explicitly indicate that voice integration is scheduled for Task 5. Caption display is a preview shell; caption preferences and live transcription are scheduled for Task 6. Theme/accent-driven character materials are scheduled for Task 3.
+
+Three.js is loaded on demand from the pinned jsDelivr package URL when the Live Chat screen is first opened. The renderer caps device pixel ratio for mobile performance. No existing chat, Firebase, or Worker behaviour has been replaced.
