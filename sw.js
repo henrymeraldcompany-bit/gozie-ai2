@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'gozie-ai-v34';
+const CACHE_NAME = 'gozie-ai-v35';
 
 const FILES = [
   "./",
